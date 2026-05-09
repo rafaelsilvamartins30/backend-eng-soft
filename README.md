@@ -247,16 +247,16 @@ Checklist recomendado:
 Base path:
 
 ```text
-/api/exemplos
+/api/v1/exemplos
 ```
 
 Endpoints:
 
-- `POST /api/exemplos`
-- `GET /api/exemplos`
-- `GET /api/exemplos/{id}`
-- `PUT /api/exemplos/{id}`
-- `DELETE /api/exemplos/{id}`
+- `POST /api/v1/exemplos`
+- `GET /api/v1/exemplos`
+- `GET /api/v1/exemplos/{id}`
+- `PUT /api/v1/exemplos/{id}`
+- `DELETE /api/v1/exemplos/{id}`
 
 Exemplo de body:
 
@@ -286,7 +286,7 @@ Contrato padrão de erro:
   "status": 400,
   "error": "Bad Request",
   "message": "Dados de entrada inválidos",
-  "path": "/api/exemplos",
+  "path": "/api/v1/exemplos",
   "details": ["nome: O nome é obrigatório"]
 }
 ```
