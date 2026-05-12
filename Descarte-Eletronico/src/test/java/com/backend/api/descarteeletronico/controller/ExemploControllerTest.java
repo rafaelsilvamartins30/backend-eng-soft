@@ -57,7 +57,7 @@ class ExemploControllerTest {
     void createReturnsCreatedResponse() throws Exception {
         when(exemploService.create(request)).thenReturn(response);
 
-        mockMvc.perform(post("/api/exemplos")
+        mockMvc.perform(post("/api/v1/exemplos")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
@@ -73,7 +73,7 @@ class ExemploControllerTest {
     void createReturnsBadRequestWhenPayloadIsInvalid() throws Exception {
         ExemploRequest invalidRequest = new ExemploRequest("", "");
 
-        mockMvc.perform(post("/api/exemplos")
+        mockMvc.perform(post("/api/v1/exemplos")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(invalidRequest)))
                 .andExpect(status().isBadRequest())
@@ -87,12 +87,12 @@ class ExemploControllerTest {
     void createReturnsBadRequestWhenServiceThrowsBusinessException() throws Exception {
         when(exemploService.create(request)).thenThrow(new BusinessException("Regra de negócio inválida"));
 
-        mockMvc.perform(post("/api/exemplos")
+        mockMvc.perform(post("/api/v1/exemplos")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value("Regra de negócio inválida"))
-                .andExpect(jsonPath("$.path").value("/api/exemplos"));
+                .andExpect(jsonPath("$.path").value("/api/v1/exemplos"));
 
         verify(exemploService).create(request);
         verifyNoMoreInteractions(exemploService);
@@ -102,7 +102,7 @@ class ExemploControllerTest {
     void findByIdReturnsOkResponse() throws Exception {
         when(exemploService.findById(id)).thenReturn(response);
 
-        mockMvc.perform(get("/api/exemplos/{id}", id))
+        mockMvc.perform(get("/api/v1/exemplos/{id}", id))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(id.toString()));
 
@@ -114,7 +114,7 @@ class ExemploControllerTest {
     void findByIdReturnsNotFoundWhenServiceThrows() throws Exception {
         when(exemploService.findById(id)).thenThrow(new ResourceNotFoundException("Exemplo não encontrado"));
 
-        mockMvc.perform(get("/api/exemplos/{id}", id))
+        mockMvc.perform(get("/api/v1/exemplos/{id}", id))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.message").value("Exemplo não encontrado"));
 
@@ -126,7 +126,7 @@ class ExemploControllerTest {
     void findAllReturnsOkResponse() throws Exception {
         when(exemploService.findAll()).thenReturn(Set.of(response));
 
-        mockMvc.perform(get("/api/exemplos"))
+        mockMvc.perform(get("/api/v1/exemplos"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].id").value(id.toString()));
 
@@ -138,7 +138,7 @@ class ExemploControllerTest {
     void findAllReturnsEmptyListWhenThereAreNoActiveEntities() throws Exception {
         when(exemploService.findAll()).thenReturn(Set.of());
 
-        mockMvc.perform(get("/api/exemplos"))
+        mockMvc.perform(get("/api/v1/exemplos"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").isArray())
                 .andExpect(jsonPath("$").isEmpty());
@@ -151,10 +151,10 @@ class ExemploControllerTest {
     void findAllReturnsInternalServerErrorWhenServiceThrowsUnexpectedException() throws Exception {
         when(exemploService.findAll()).thenThrow(new IllegalStateException("Falha inesperada"));
 
-        mockMvc.perform(get("/api/exemplos"))
+        mockMvc.perform(get("/api/v1/exemplos"))
                 .andExpect(status().isInternalServerError())
                 .andExpect(jsonPath("$.message").value("Erro interno inesperado"))
-                .andExpect(jsonPath("$.path").value("/api/exemplos"));
+                .andExpect(jsonPath("$.path").value("/api/v1/exemplos"));
 
         verify(exemploService).findAll();
         verifyNoMoreInteractions(exemploService);
@@ -164,7 +164,7 @@ class ExemploControllerTest {
     void updateReturnsOkResponse() throws Exception {
         when(exemploService.update(id, request)).thenReturn(response);
 
-        mockMvc.perform(put("/api/exemplos/{id}", id)
+        mockMvc.perform(put("/api/v1/exemplos/{id}", id)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
@@ -179,7 +179,7 @@ class ExemploControllerTest {
     void updateReturnsNotFoundWhenServiceThrows() throws Exception {
         when(exemploService.update(id, request)).thenThrow(new ResourceNotFoundException("Exemplo não encontrado"));
 
-        mockMvc.perform(put("/api/exemplos/{id}", id)
+        mockMvc.perform(put("/api/v1/exemplos/{id}", id)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isNotFound())
@@ -193,7 +193,7 @@ class ExemploControllerTest {
     void updateReturnsBadRequestWhenPayloadIsInvalid() throws Exception {
         ExemploRequest invalidRequest = new ExemploRequest("", "");
 
-        mockMvc.perform(put("/api/exemplos/{id}", id)
+        mockMvc.perform(put("/api/v1/exemplos/{id}", id)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(invalidRequest)))
                 .andExpect(status().isBadRequest())
@@ -205,7 +205,7 @@ class ExemploControllerTest {
 
     @Test
     void deleteReturnsNoContent() throws Exception {
-        mockMvc.perform(delete("/api/exemplos/{id}", id))
+        mockMvc.perform(delete("/api/v1/exemplos/{id}", id))
                 .andExpect(status().isNoContent());
 
         verify(exemploService).delete(id);
@@ -218,7 +218,7 @@ class ExemploControllerTest {
                 .when(exemploService)
                 .delete(id);
 
-        mockMvc.perform(delete("/api/exemplos/{id}", id))
+        mockMvc.perform(delete("/api/v1/exemplos/{id}", id))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.message").value("Exemplo não encontrado"));
 

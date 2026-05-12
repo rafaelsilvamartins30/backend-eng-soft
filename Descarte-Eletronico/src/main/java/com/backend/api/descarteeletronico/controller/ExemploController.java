@@ -29,7 +29,7 @@ import java.util.Set;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/exemplos")
+@RequestMapping("/api/v1/exemplos")
 @RequiredArgsConstructor
 @Tag(name = "Exemplos", description = "CRUD de referência para novas entidades")
 public class ExemploController {
@@ -60,7 +60,7 @@ public class ExemploController {
                                       "status": 400,
                                       "error": "Bad Request",
                                       "message": "Dados de entrada inválidos",
-                                      "path": "/api/exemplos",
+                                      "path": "/api/v1/exemplos",
                                       "details": ["nome: O nome é obrigatório"]
                                     }
                                     """))),
@@ -95,7 +95,7 @@ public class ExemploController {
                                       "status": 404,
                                       "error": "Not Found",
                                       "message": "Exemplo não encontrado",
-                                      "path": "/api/exemplos/4fbb2c8e-8737-4e24-9ef0-0db72a231ce8",
+                                      "path": "/api/v1/exemplos/4fbb2c8e-8737-4e24-9ef0-0db72a231ce8",
                                       "details": []
                                     }
                                     """))),

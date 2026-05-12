@@ -62,12 +62,12 @@ public class ExemploService implements BaseService<ExemploRequest, ExemploRespon
     @Override
     @Transactional(readOnly = true)
     public Set<ExemploResponse> findAll() {
-        Set<Exemplo> exemplos = exemploRepository.findAllByEntityStatusNot(EntityStatus.DELETED);
+        Set<Exemplo> exemplos = exemploRepository.findAllByEntityStatus(EntityStatus.ACTIVE);
         return exemploMapper.toResponseSet(exemplos);
     }
 
     private Exemplo findActiveEntityById(UUID id) {
-        return exemploRepository.findByIdAndEntityStatusNot(id, EntityStatus.DELETED)
+        return exemploRepository.findByIdAndEntityStatus(id, EntityStatus.ACTIVE)
                 .orElseThrow(() -> new ResourceNotFoundException("Exemplo não encontrado"));
     }
 }

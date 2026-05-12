@@ -163,8 +163,8 @@ No service concreto:
 
 - `delete` deve alterar `entityStatus` para `DELETED`;
 - `delete` deve preencher `deletedAt`;
-- `findById` deve ignorar registros `DELETED`;
-- `findAll` deve ignorar registros `DELETED`.
+- `findById` deve retornar apenas registros `ACTIVE`;
+- `findAll` deve retornar apenas registros `ACTIVE`.
 
 ## BaseMapper
 
@@ -224,7 +224,7 @@ Regras:
 - Não criar CRUD genérico automático.
 - Service deve implementar `BaseService`.
 - Mapper deve estender `BaseMapper`.
-- Repository deve expor buscas ignorando `EntityStatus.DELETED`.
+- Repository deve expor buscas filtrando `EntityStatus.ACTIVE`.
 - DTO de request pode ser o mesmo para create e update quando fizer sentido.
 - SQL deve conter campos técnicos herdados da `BaseEntity`.
 - Swagger deve documentar respostas de sucesso e erro usando `ErrorResponseDTO`.
@@ -234,7 +234,7 @@ Checklist recomendado:
 
 1. Criar entity, DTOs, repository, mapper, service e controller.
 2. Criar migration Flyway com o próximo número, por exemplo `V2__create_produto_table.sql`.
-3. No repository, criar métodos que ignorem `EntityStatus.DELETED`.
+3. No repository, criar métodos que filtrem `EntityStatus.ACTIVE`.
 4. No service, implementar soft delete e lançar `ResourceNotFoundException` quando necessário.
 5. No controller, usar `@Valid`, `ResponseEntity`, `@Operation` e `@ApiResponses`.
 6. Criar testes unitários do service com `assertThat`, `assertThatThrownBy`, `verify` e `verifyNoMoreInteractions`.
@@ -247,16 +247,16 @@ Checklist recomendado:
 Base path:
 
 ```text
-/api/exemplos
+/api/v1/exemplos
 ```
 
 Endpoints:
 
-- `POST /api/exemplos`
-- `GET /api/exemplos`
-- `GET /api/exemplos/{id}`
-- `PUT /api/exemplos/{id}`
-- `DELETE /api/exemplos/{id}`
+- `POST /api/v1/exemplos`
+- `GET /api/v1/exemplos`
+- `GET /api/v1/exemplos/{id}`
+- `PUT /api/v1/exemplos/{id}`
+- `DELETE /api/v1/exemplos/{id}`
 
 Exemplo de body:
 
@@ -286,7 +286,7 @@ Contrato padrão de erro:
   "status": 400,
   "error": "Bad Request",
   "message": "Dados de entrada inválidos",
-  "path": "/api/exemplos",
+  "path": "/api/v1/exemplos",
   "details": ["nome: O nome é obrigatório"]
 }
 ```
