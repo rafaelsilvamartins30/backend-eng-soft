@@ -62,7 +62,7 @@ class PontoColetaRepositoryTest {
   }
 
   @Test
-  void findByIdAndEntityStatusNotReturnsActiveEntityWithTiposProduto() {
+  void findByIdAndEntityStatusReturnsActiveEntityWithTiposProduto() {
     TipoProduto tipoProduto =
         tipoProdutoRepository.saveAndFlush(
             new TipoProduto("Computadores", "Notebooks, desktops e monitores"));
@@ -77,7 +77,7 @@ class PontoColetaRepositoryTest {
                 Set.of(tipoProduto)));
 
     Optional<PontoColeta> result =
-        pontoColetaRepository.findByIdAndEntityStatusNot(saved.getId(), EntityStatus.DELETED);
+        pontoColetaRepository.findByIdAndEntityStatus(saved.getId(), EntityStatus.ACTIVE);
 
     assertThat(result).isPresent();
     assertThat(result.get().getNome()).isEqualTo("EcoPonto Centro");
@@ -85,7 +85,7 @@ class PontoColetaRepositoryTest {
   }
 
   @Test
-  void findByIdAndEntityStatusNotIgnoresDeletedEntity() {
+  void findByIdAndEntityStatusIgnoresDeletedEntity() {
     PontoColeta pontoColeta =
         new PontoColeta(
             "EcoPonto Centro",
@@ -98,13 +98,32 @@ class PontoColetaRepositoryTest {
     PontoColeta saved = pontoColetaRepository.saveAndFlush(pontoColeta);
 
     Optional<PontoColeta> result =
-        pontoColetaRepository.findByIdAndEntityStatusNot(saved.getId(), EntityStatus.DELETED);
+        pontoColetaRepository.findByIdAndEntityStatus(saved.getId(), EntityStatus.ACTIVE);
 
     assertThat(result).isEmpty();
   }
 
   @Test
-  void findAllByEntityStatusNotReturnsOnlyActiveEntities() {
+  void findByIdAndEntityStatusIgnoresInactiveEntity() {
+    PontoColeta pontoColeta =
+        new PontoColeta(
+            "EcoPonto Centro",
+            "Rua das Flores, 123",
+            "Recebe eletrônicos de pequeno porte",
+            new BigDecimal("-23.5505200"),
+            new BigDecimal("-46.6333080"),
+            Set.of());
+    pontoColeta.setEntityStatus(EntityStatus.INACTIVE);
+    PontoColeta saved = pontoColetaRepository.saveAndFlush(pontoColeta);
+
+    Optional<PontoColeta> result =
+        pontoColetaRepository.findByIdAndEntityStatus(saved.getId(), EntityStatus.ACTIVE);
+
+    assertThat(result).isEmpty();
+  }
+
+  @Test
+  void findAllByEntityStatusReturnsOnlyActiveEntities() {
     PontoColeta active =
         new PontoColeta(
             "EcoPonto Centro",
@@ -122,9 +141,18 @@ class PontoColetaRepositoryTest {
             new BigDecimal("-43.2000000"),
             Set.of());
     deleted.setEntityStatus(EntityStatus.DELETED);
-    pontoColetaRepository.saveAllAndFlush(Set.of(active, deleted));
+    PontoColeta inactive =
+        new PontoColeta(
+            "EcoPonto Fechado",
+            "Avenida Paulista, 789",
+            "Temporariamente indisponível",
+            new BigDecimal("-23.5600000"),
+            new BigDecimal("-46.6500000"),
+            Set.of());
+    inactive.setEntityStatus(EntityStatus.INACTIVE);
+    pontoColetaRepository.saveAllAndFlush(Set.of(active, deleted, inactive));
 
-    Set<PontoColeta> result = pontoColetaRepository.findAllByEntityStatusNot(EntityStatus.DELETED);
+    Set<PontoColeta> result = pontoColetaRepository.findAllByEntityStatus(EntityStatus.ACTIVE);
 
     assertThat(result).extracting(PontoColeta::getNome).containsExactly("EcoPonto Centro");
   }

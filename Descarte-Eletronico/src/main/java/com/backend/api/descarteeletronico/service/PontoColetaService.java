@@ -70,19 +70,19 @@ public class PontoColetaService implements BaseService<PontoColetaRequest, Ponto
   @Transactional(readOnly = true)
   public Set<PontoColetaResponse> findAll() {
     Set<PontoColeta> pontosColeta =
-        pontoColetaRepository.findAllByEntityStatusNot(EntityStatus.DELETED);
+        pontoColetaRepository.findAllByEntityStatus(EntityStatus.ACTIVE);
     return pontoColetaMapper.toResponseSet(pontosColeta);
   }
 
   private PontoColeta findActiveEntityById(UUID id) {
     return pontoColetaRepository
-        .findByIdAndEntityStatusNot(id, EntityStatus.DELETED)
+        .findByIdAndEntityStatus(id, EntityStatus.ACTIVE)
         .orElseThrow(() -> new ResourceNotFoundException("Ponto de coleta não encontrado"));
   }
 
   private Set<TipoProduto> findActiveTiposProduto(Set<UUID> ids) {
     Set<TipoProduto> tiposProduto =
-        tipoProdutoRepository.findAllByIdInAndEntityStatusNot(ids, EntityStatus.DELETED);
+        tipoProdutoRepository.findAllByIdInAndEntityStatus(ids, EntityStatus.ACTIVE);
 
     if (tiposProduto.size() != ids.size()) {
       throw new BusinessException("Informe apenas tipos de produto ativos e existentes");

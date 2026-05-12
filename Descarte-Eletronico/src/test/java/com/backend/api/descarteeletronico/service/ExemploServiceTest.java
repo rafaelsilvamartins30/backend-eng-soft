@@ -70,14 +70,14 @@ class ExemploServiceTest {
 
     @Test
     void updateFindsActiveEntityAppliesMapperAndReturnsResponse() {
-        when(exemploRepository.findByIdAndEntityStatusNot(id, EntityStatus.DELETED)).thenReturn(Optional.of(exemplo));
+        when(exemploRepository.findByIdAndEntityStatus(id, EntityStatus.ACTIVE)).thenReturn(Optional.of(exemplo));
         when(exemploRepository.save(exemplo)).thenReturn(exemplo);
         when(exemploMapper.toResponse(exemplo)).thenReturn(response);
 
         ExemploResponse result = exemploService.update(id, request);
 
         assertThat(result).isEqualTo(response);
-        verify(exemploRepository).findByIdAndEntityStatusNot(id, EntityStatus.DELETED);
+        verify(exemploRepository).findByIdAndEntityStatus(id, EntityStatus.ACTIVE);
         verify(exemploMapper).updateEntityFromRequest(request, exemplo);
         verify(exemploRepository).save(exemplo);
         verify(exemploMapper).toResponse(exemplo);
@@ -86,12 +86,12 @@ class ExemploServiceTest {
 
     @Test
     void updateThrowsWhenEntityDoesNotExist() {
-        when(exemploRepository.findByIdAndEntityStatusNot(id, EntityStatus.DELETED)).thenReturn(Optional.empty());
+        when(exemploRepository.findByIdAndEntityStatus(id, EntityStatus.ACTIVE)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> exemploService.update(id, request))
                 .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessage("Exemplo não encontrado");
-        verify(exemploRepository).findByIdAndEntityStatusNot(id, EntityStatus.DELETED);
+        verify(exemploRepository).findByIdAndEntityStatus(id, EntityStatus.ACTIVE);
         verify(exemploRepository, never()).save(exemplo);
         verifyNoInteractions(exemploMapper);
         verifyNoMoreInteractions(exemploRepository);
@@ -99,13 +99,13 @@ class ExemploServiceTest {
 
     @Test
     void deleteMarksEntityAsDeletedAndPersistsSoftDelete() {
-        when(exemploRepository.findByIdAndEntityStatusNot(id, EntityStatus.DELETED)).thenReturn(Optional.of(exemplo));
+        when(exemploRepository.findByIdAndEntityStatus(id, EntityStatus.ACTIVE)).thenReturn(Optional.of(exemplo));
 
         exemploService.delete(id);
 
         assertThat(exemplo.getEntityStatus()).isEqualTo(EntityStatus.DELETED);
         assertThat(exemplo.getDeletedAt()).isNotNull();
-        verify(exemploRepository).findByIdAndEntityStatusNot(id, EntityStatus.DELETED);
+        verify(exemploRepository).findByIdAndEntityStatus(id, EntityStatus.ACTIVE);
         verify(exemploRepository).save(exemplo);
         verifyNoInteractions(exemploMapper);
         verifyNoMoreInteractions(exemploRepository);
@@ -113,12 +113,12 @@ class ExemploServiceTest {
 
     @Test
     void deleteThrowsWhenEntityDoesNotExist() {
-        when(exemploRepository.findByIdAndEntityStatusNot(id, EntityStatus.DELETED)).thenReturn(Optional.empty());
+        when(exemploRepository.findByIdAndEntityStatus(id, EntityStatus.ACTIVE)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> exemploService.delete(id))
                 .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessage("Exemplo não encontrado");
-        verify(exemploRepository).findByIdAndEntityStatusNot(id, EntityStatus.DELETED);
+        verify(exemploRepository).findByIdAndEntityStatus(id, EntityStatus.ACTIVE);
         verify(exemploRepository, never()).save(exemplo);
         verifyNoInteractions(exemploMapper);
         verifyNoMoreInteractions(exemploRepository);
@@ -126,40 +126,40 @@ class ExemploServiceTest {
 
     @Test
     void findByIdReturnsMappedActiveEntity() {
-        when(exemploRepository.findByIdAndEntityStatusNot(id, EntityStatus.DELETED)).thenReturn(Optional.of(exemplo));
+        when(exemploRepository.findByIdAndEntityStatus(id, EntityStatus.ACTIVE)).thenReturn(Optional.of(exemplo));
         when(exemploMapper.toResponse(exemplo)).thenReturn(response);
 
         ExemploResponse result = exemploService.findById(id);
 
         assertThat(result).isEqualTo(response);
-        verify(exemploRepository).findByIdAndEntityStatusNot(id, EntityStatus.DELETED);
+        verify(exemploRepository).findByIdAndEntityStatus(id, EntityStatus.ACTIVE);
         verify(exemploMapper).toResponse(exemplo);
         verifyNoMoreInteractions(exemploRepository, exemploMapper);
     }
 
     @Test
     void findByIdThrowsWhenEntityDoesNotExist() {
-        when(exemploRepository.findByIdAndEntityStatusNot(id, EntityStatus.DELETED)).thenReturn(Optional.empty());
+        when(exemploRepository.findByIdAndEntityStatus(id, EntityStatus.ACTIVE)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> exemploService.findById(id))
                 .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessage("Exemplo não encontrado");
-        verify(exemploRepository).findByIdAndEntityStatusNot(id, EntityStatus.DELETED);
+        verify(exemploRepository).findByIdAndEntityStatus(id, EntityStatus.ACTIVE);
         verifyNoInteractions(exemploMapper);
         verifyNoMoreInteractions(exemploRepository);
     }
 
     @Test
-    void findAllIgnoresDeletedEntitiesAndMapsResponses() {
+    void findAllReturnsOnlyActiveEntitiesAndMapsResponses() {
         Set<Exemplo> exemplos = Set.of(exemplo);
         Set<ExemploResponse> responses = Set.of(response);
-        when(exemploRepository.findAllByEntityStatusNot(EntityStatus.DELETED)).thenReturn(exemplos);
+        when(exemploRepository.findAllByEntityStatus(EntityStatus.ACTIVE)).thenReturn(exemplos);
         when(exemploMapper.toResponseSet(exemplos)).thenReturn(responses);
 
         Set<ExemploResponse> result = exemploService.findAll();
 
         assertThat(result).isEqualTo(responses);
-        verify(exemploRepository).findAllByEntityStatusNot(EntityStatus.DELETED);
+        verify(exemploRepository).findAllByEntityStatus(EntityStatus.ACTIVE);
         verify(exemploMapper).toResponseSet(exemplos);
         verifyNoMoreInteractions(exemploRepository, exemploMapper);
     }
@@ -168,13 +168,13 @@ class ExemploServiceTest {
     void findAllWithEmptyResultDelegatesToMapper() {
         Set<Exemplo> exemplos = Set.of();
         Set<ExemploResponse> responses = Set.of();
-        when(exemploRepository.findAllByEntityStatusNot(EntityStatus.DELETED)).thenReturn(exemplos);
+        when(exemploRepository.findAllByEntityStatus(EntityStatus.ACTIVE)).thenReturn(exemplos);
         when(exemploMapper.toResponseSet(exemplos)).thenReturn(responses);
 
         Set<ExemploResponse> result = exemploService.findAll();
 
         assertThat(result).isEmpty();
-        verify(exemploRepository).findAllByEntityStatusNot(EntityStatus.DELETED);
+        verify(exemploRepository).findAllByEntityStatus(EntityStatus.ACTIVE);
         verify(exemploMapper).toResponseSet(exemplos);
         verifyNoMoreInteractions(exemploRepository, exemploMapper);
     }

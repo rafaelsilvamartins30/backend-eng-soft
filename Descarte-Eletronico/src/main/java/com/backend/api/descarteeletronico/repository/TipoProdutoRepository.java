@@ -10,9 +10,9 @@ import java.util.UUID;
 
 public interface TipoProdutoRepository extends JpaRepository<TipoProduto, UUID> {
 
-  Optional<TipoProduto> findByIdAndEntityStatusNot(UUID id, EntityStatus entityStatus);
+  Optional<TipoProduto> findByIdAndEntityStatus(UUID id, EntityStatus entityStatus);
 
-  Set<TipoProduto> findAllByEntityStatusNot(EntityStatus entityStatus);
+  Set<TipoProduto> findAllByEntityStatus(EntityStatus entityStatus);
 
-  Set<TipoProduto> findAllByIdInAndEntityStatusNot(Set<UUID> ids, EntityStatus entityStatus);
+  Set<TipoProduto> findAllByIdInAndEntityStatus(Set<UUID> ids, EntityStatus entityStatus);
 }

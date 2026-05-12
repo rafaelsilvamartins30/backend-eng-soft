@@ -69,7 +69,7 @@ class TipoProdutoServiceTest {
 
   @Test
   void updateFindsActiveEntityAppliesMapperAndReturnsResponse() {
-    when(tipoProdutoRepository.findByIdAndEntityStatusNot(id, EntityStatus.DELETED))
+    when(tipoProdutoRepository.findByIdAndEntityStatus(id, EntityStatus.ACTIVE))
         .thenReturn(Optional.of(tipoProduto));
     when(tipoProdutoRepository.save(tipoProduto)).thenReturn(tipoProduto);
     when(tipoProdutoMapper.toResponse(tipoProduto)).thenReturn(response);
@@ -77,7 +77,7 @@ class TipoProdutoServiceTest {
     TipoProdutoResponse result = tipoProdutoService.update(id, request);
 
     assertThat(result).isEqualTo(response);
-    verify(tipoProdutoRepository).findByIdAndEntityStatusNot(id, EntityStatus.DELETED);
+    verify(tipoProdutoRepository).findByIdAndEntityStatus(id, EntityStatus.ACTIVE);
     verify(tipoProdutoMapper).updateEntityFromRequest(request, tipoProduto);
     verify(tipoProdutoRepository).save(tipoProduto);
     verify(tipoProdutoMapper).toResponse(tipoProduto);
@@ -86,14 +86,14 @@ class TipoProdutoServiceTest {
 
   @Test
   void deleteMarksEntityAsDeletedAndPersistsSoftDelete() {
-    when(tipoProdutoRepository.findByIdAndEntityStatusNot(id, EntityStatus.DELETED))
+    when(tipoProdutoRepository.findByIdAndEntityStatus(id, EntityStatus.ACTIVE))
         .thenReturn(Optional.of(tipoProduto));
 
     tipoProdutoService.delete(id);
 
     assertThat(tipoProduto.getEntityStatus()).isEqualTo(EntityStatus.DELETED);
     assertThat(tipoProduto.getDeletedAt()).isNotNull();
-    verify(tipoProdutoRepository).findByIdAndEntityStatusNot(id, EntityStatus.DELETED);
+    verify(tipoProdutoRepository).findByIdAndEntityStatus(id, EntityStatus.ACTIVE);
     verify(tipoProdutoRepository).save(tipoProduto);
     verifyNoInteractions(tipoProdutoMapper);
     verifyNoMoreInteractions(tipoProdutoRepository);
@@ -101,57 +101,57 @@ class TipoProdutoServiceTest {
 
   @Test
   void findByIdReturnsMappedActiveEntity() {
-    when(tipoProdutoRepository.findByIdAndEntityStatusNot(id, EntityStatus.DELETED))
+    when(tipoProdutoRepository.findByIdAndEntityStatus(id, EntityStatus.ACTIVE))
         .thenReturn(Optional.of(tipoProduto));
     when(tipoProdutoMapper.toResponse(tipoProduto)).thenReturn(response);
 
     TipoProdutoResponse result = tipoProdutoService.findById(id);
 
     assertThat(result).isEqualTo(response);
-    verify(tipoProdutoRepository).findByIdAndEntityStatusNot(id, EntityStatus.DELETED);
+    verify(tipoProdutoRepository).findByIdAndEntityStatus(id, EntityStatus.ACTIVE);
     verify(tipoProdutoMapper).toResponse(tipoProduto);
     verifyNoMoreInteractions(tipoProdutoRepository, tipoProdutoMapper);
   }
 
   @Test
   void findByIdThrowsWhenEntityDoesNotExist() {
-    when(tipoProdutoRepository.findByIdAndEntityStatusNot(id, EntityStatus.DELETED))
+    when(tipoProdutoRepository.findByIdAndEntityStatus(id, EntityStatus.ACTIVE))
         .thenReturn(Optional.empty());
 
     assertThatThrownBy(() -> tipoProdutoService.findById(id))
         .isInstanceOf(ResourceNotFoundException.class)
         .hasMessage("Tipo de produto não encontrado");
-    verify(tipoProdutoRepository).findByIdAndEntityStatusNot(id, EntityStatus.DELETED);
+    verify(tipoProdutoRepository).findByIdAndEntityStatus(id, EntityStatus.ACTIVE);
     verifyNoInteractions(tipoProdutoMapper);
     verifyNoMoreInteractions(tipoProdutoRepository);
   }
 
   @Test
   void deleteThrowsWhenEntityDoesNotExist() {
-    when(tipoProdutoRepository.findByIdAndEntityStatusNot(id, EntityStatus.DELETED))
+    when(tipoProdutoRepository.findByIdAndEntityStatus(id, EntityStatus.ACTIVE))
         .thenReturn(Optional.empty());
 
     assertThatThrownBy(() -> tipoProdutoService.delete(id))
         .isInstanceOf(ResourceNotFoundException.class)
         .hasMessage("Tipo de produto não encontrado");
-    verify(tipoProdutoRepository).findByIdAndEntityStatusNot(id, EntityStatus.DELETED);
+    verify(tipoProdutoRepository).findByIdAndEntityStatus(id, EntityStatus.ACTIVE);
     verify(tipoProdutoRepository, never()).save(tipoProduto);
     verifyNoInteractions(tipoProdutoMapper);
     verifyNoMoreInteractions(tipoProdutoRepository);
   }
 
   @Test
-  void findAllIgnoresDeletedEntitiesAndMapsResponses() {
+  void findAllReturnsOnlyActiveEntitiesAndMapsResponses() {
     Set<TipoProduto> tiposProduto = Set.of(tipoProduto);
     Set<TipoProdutoResponse> responses = Set.of(response);
-    when(tipoProdutoRepository.findAllByEntityStatusNot(EntityStatus.DELETED))
+    when(tipoProdutoRepository.findAllByEntityStatus(EntityStatus.ACTIVE))
         .thenReturn(tiposProduto);
     when(tipoProdutoMapper.toResponseSet(tiposProduto)).thenReturn(responses);
 
     Set<TipoProdutoResponse> result = tipoProdutoService.findAll();
 
     assertThat(result).isEqualTo(responses);
-    verify(tipoProdutoRepository).findAllByEntityStatusNot(EntityStatus.DELETED);
+    verify(tipoProdutoRepository).findAllByEntityStatus(EntityStatus.ACTIVE);
     verify(tipoProdutoMapper).toResponseSet(tiposProduto);
     verifyNoMoreInteractions(tipoProdutoRepository, tipoProdutoMapper);
   }
@@ -160,27 +160,27 @@ class TipoProdutoServiceTest {
   void findAllWithEmptyResultDelegatesToMapper() {
     Set<TipoProduto> tiposProduto = Set.of();
     Set<TipoProdutoResponse> responses = Set.of();
-    when(tipoProdutoRepository.findAllByEntityStatusNot(EntityStatus.DELETED))
+    when(tipoProdutoRepository.findAllByEntityStatus(EntityStatus.ACTIVE))
         .thenReturn(tiposProduto);
     when(tipoProdutoMapper.toResponseSet(tiposProduto)).thenReturn(responses);
 
     Set<TipoProdutoResponse> result = tipoProdutoService.findAll();
 
     assertThat(result).isEmpty();
-    verify(tipoProdutoRepository).findAllByEntityStatusNot(EntityStatus.DELETED);
+    verify(tipoProdutoRepository).findAllByEntityStatus(EntityStatus.ACTIVE);
     verify(tipoProdutoMapper).toResponseSet(tiposProduto);
     verifyNoMoreInteractions(tipoProdutoRepository, tipoProdutoMapper);
   }
 
   @Test
   void updateThrowsWhenEntityDoesNotExist() {
-    when(tipoProdutoRepository.findByIdAndEntityStatusNot(id, EntityStatus.DELETED))
+    when(tipoProdutoRepository.findByIdAndEntityStatus(id, EntityStatus.ACTIVE))
         .thenReturn(Optional.empty());
 
     assertThatThrownBy(() -> tipoProdutoService.update(id, request))
         .isInstanceOf(ResourceNotFoundException.class)
         .hasMessage("Tipo de produto não encontrado");
-    verify(tipoProdutoRepository).findByIdAndEntityStatusNot(id, EntityStatus.DELETED);
+    verify(tipoProdutoRepository).findByIdAndEntityStatus(id, EntityStatus.ACTIVE);
     verify(tipoProdutoRepository, never()).save(tipoProduto);
     verifyNoInteractions(tipoProdutoMapper);
     verifyNoMoreInteractions(tipoProdutoRepository);

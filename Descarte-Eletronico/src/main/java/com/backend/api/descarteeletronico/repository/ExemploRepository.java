@@ -10,7 +10,7 @@ import java.util.UUID;
 
 public interface ExemploRepository extends JpaRepository<Exemplo, UUID> {
 
-  Optional<Exemplo> findByIdAndEntityStatusNot(UUID id, EntityStatus entityStatus);
+  Optional<Exemplo> findByIdAndEntityStatus(UUID id, EntityStatus entityStatus);
 
-  Set<Exemplo> findAllByEntityStatusNot(EntityStatus entityStatus);
+  Set<Exemplo> findAllByEntityStatus(EntityStatus entityStatus);
 }

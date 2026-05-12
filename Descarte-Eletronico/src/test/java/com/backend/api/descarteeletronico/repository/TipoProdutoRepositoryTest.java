@@ -54,13 +54,13 @@ class TipoProdutoRepositoryTest {
   }
 
   @Test
-  void findByIdAndEntityStatusNotReturnsActiveEntity() {
+  void findByIdAndEntityStatusReturnsActiveEntity() {
     TipoProduto saved =
         tipoProdutoRepository.saveAndFlush(
             new TipoProduto("Computadores", "Notebooks, desktops e monitores"));
 
     Optional<TipoProduto> result =
-        tipoProdutoRepository.findByIdAndEntityStatusNot(saved.getId(), EntityStatus.DELETED);
+        tipoProdutoRepository.findByIdAndEntityStatus(saved.getId(), EntityStatus.ACTIVE);
 
     assertThat(result).isPresent();
     assertThat(result.get().getNome()).isEqualTo("Computadores");
@@ -68,28 +68,43 @@ class TipoProdutoRepositoryTest {
   }
 
   @Test
-  void findByIdAndEntityStatusNotIgnoresDeletedEntity() {
+  void findByIdAndEntityStatusIgnoresDeletedEntity() {
     TipoProduto tipoProduto = new TipoProduto("Celulares", "Smartphones e carregadores");
     tipoProduto.setEntityStatus(EntityStatus.DELETED);
     TipoProduto saved = tipoProdutoRepository.saveAndFlush(tipoProduto);
 
     Optional<TipoProduto> result =
-        tipoProdutoRepository.findByIdAndEntityStatusNot(saved.getId(), EntityStatus.DELETED);
+        tipoProdutoRepository.findByIdAndEntityStatus(saved.getId(), EntityStatus.ACTIVE);
 
     assertThat(result).isEmpty();
   }
 
   @Test
-  void findAllByIdInAndEntityStatusNotReturnsOnlyActiveEntities() {
+  void findByIdAndEntityStatusIgnoresInactiveEntity() {
+    TipoProduto tipoProduto = new TipoProduto("Celulares", "Smartphones e carregadores");
+    tipoProduto.setEntityStatus(EntityStatus.INACTIVE);
+    TipoProduto saved = tipoProdutoRepository.saveAndFlush(tipoProduto);
+
+    Optional<TipoProduto> result =
+        tipoProdutoRepository.findByIdAndEntityStatus(saved.getId(), EntityStatus.ACTIVE);
+
+    assertThat(result).isEmpty();
+  }
+
+  @Test
+  void findAllByIdInAndEntityStatusReturnsOnlyActiveEntities() {
     TipoProduto active =
         tipoProdutoRepository.save(new TipoProduto("Computadores", "Notebooks e desktops"));
+    TipoProduto inactive = new TipoProduto("Pilhas", "Pilhas e baterias");
+    inactive.setEntityStatus(EntityStatus.INACTIVE);
+    TipoProduto savedInactive = tipoProdutoRepository.save(inactive);
     TipoProduto deleted = new TipoProduto("Celulares", "Smartphones");
     deleted.setEntityStatus(EntityStatus.DELETED);
     TipoProduto savedDeleted = tipoProdutoRepository.saveAndFlush(deleted);
 
     Set<TipoProduto> result =
-        tipoProdutoRepository.findAllByIdInAndEntityStatusNot(
-            Set.of(active.getId(), savedDeleted.getId()), EntityStatus.DELETED);
+        tipoProdutoRepository.findAllByIdInAndEntityStatus(
+            Set.of(active.getId(), savedInactive.getId(), savedDeleted.getId()), EntityStatus.ACTIVE);
 
     assertThat(result).extracting(TipoProduto::getNome).containsExactly("Computadores");
   }

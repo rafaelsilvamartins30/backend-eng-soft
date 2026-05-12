@@ -69,12 +69,12 @@ Response deve expor o que a API precisa retornar. Pode incluir campos técnicos 
 
 ## Repository
 
-Repositories devem ignorar soft delete nas buscas públicas.
+Repositories devem retornar apenas registros ativos nas buscas públicas.
 
 ```java
-Optional<Produto> findByIdAndEntityStatusNot(UUID id, EntityStatus entityStatus);
+Optional<Produto> findByIdAndEntityStatus(UUID id, EntityStatus entityStatus);
 
-Set<Produto> findAllByEntityStatusNot(EntityStatus entityStatus);
+Set<Produto> findAllByEntityStatus(EntityStatus entityStatus);
 ```
 
 ## Mapper

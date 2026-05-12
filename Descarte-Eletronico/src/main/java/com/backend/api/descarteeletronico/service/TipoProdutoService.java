@@ -63,13 +63,13 @@ public class TipoProdutoService implements BaseService<TipoProdutoRequest, TipoP
   @Transactional(readOnly = true)
   public Set<TipoProdutoResponse> findAll() {
     Set<TipoProduto> tiposProduto =
-        tipoProdutoRepository.findAllByEntityStatusNot(EntityStatus.DELETED);
+        tipoProdutoRepository.findAllByEntityStatus(EntityStatus.ACTIVE);
     return tipoProdutoMapper.toResponseSet(tiposProduto);
   }
 
   private TipoProduto findActiveEntityById(UUID id) {
     return tipoProdutoRepository
-        .findByIdAndEntityStatusNot(id, EntityStatus.DELETED)
+        .findByIdAndEntityStatus(id, EntityStatus.ACTIVE)
         .orElseThrow(() -> new ResourceNotFoundException("Tipo de produto não encontrado"));
   }
 }
