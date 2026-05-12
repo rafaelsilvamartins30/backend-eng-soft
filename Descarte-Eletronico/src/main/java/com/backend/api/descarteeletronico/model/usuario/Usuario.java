@@ -23,6 +23,6 @@ public class Usuario extends BaseEntity {
     @Column(nullable = false, unique = true, length = 100)
     private String email;
 
-    @Column(name = "senha_hash", nullable = false, length = 255)
-    private String senhaHash;
+    @Column(name = "senha", nullable = false, length = 255)
+    private String senha;
 }
