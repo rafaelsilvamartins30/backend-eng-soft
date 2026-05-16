@@ -28,3 +28,7 @@ app:
   admin:
     default-email: ${ADMIN_DEFAULT_EMAIL:admin@descarte.local}
     default-password: ${ADMIN_DEFAULT_PASSWORD:Admin@123}
+  security:
+    jwt:
+      secret: ${JWT_SECRET:dev-secret-change-me-dev-secret-change-me}
+      expiration: ${JWT_EXPIRATION:1h}

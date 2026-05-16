@@ -6,6 +6,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -23,6 +24,12 @@ public class GlobalExceptionHandler {
   public ResponseEntity<ErrorResponseDTO> handleBusinessException(
       BusinessException exception, HttpServletRequest request) {
     return buildResponse(HttpStatus.BAD_REQUEST, exception.getMessage(), request, Set.of());
+  }
+
+  @ExceptionHandler(AuthenticationException.class)
+  public ResponseEntity<ErrorResponseDTO> handleAuthenticationException(
+      AuthenticationException exception, HttpServletRequest request) {
+    return buildResponse(HttpStatus.UNAUTHORIZED, "Credenciais inválidas", request, Set.of());
   }
 
   @ExceptionHandler(MethodArgumentNotValidException.class)
