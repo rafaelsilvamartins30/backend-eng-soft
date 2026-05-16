@@ -68,18 +68,12 @@ public class Usuario extends BaseEntity implements UserDetails {
     return true;
   }
 
-  @Override
-  public boolean isAccountNonLocked() {
-    return getEntityStatus() == EntityStatus.ACTIVE;
-  }
+  @Column(name = "nome", nullable = false, length = 100)
+  private String nome;
 
-  @Override
-  public boolean isCredentialsNonExpired() {
-    return true;
-  }
+  @Column(name = "email", nullable = false, length = 100)
+  private String email;
 
-  @Override
-  public boolean isEnabled() {
-    return getEntityStatus() == EntityStatus.ACTIVE;
-  }
+  @Column(name = "senha", nullable = false, length = 255)
+  private String senha;
 }

@@ -1,23 +1,5 @@
 package com.backend.api.descarteeletronico.service;
 
-import com.backend.api.descarteeletronico.exception.ResourceNotFoundException;
-import com.backend.api.descarteeletronico.mapper.TipoProdutoMapper;
-import com.backend.api.descarteeletronico.model.enums.EntityStatus;
-import com.backend.api.descarteeletronico.model.tipoproduto.TipoProduto;
-import com.backend.api.descarteeletronico.model.tipoproduto.dto.TipoProdutoRequest;
-import com.backend.api.descarteeletronico.model.tipoproduto.dto.TipoProdutoResponse;
-import com.backend.api.descarteeletronico.repository.TipoProdutoRepository;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.never;
@@ -25,6 +7,23 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+
+import com.backend.api.descarteeletronico.exception.ResourceNotFoundException;
+import com.backend.api.descarteeletronico.mapper.TipoProdutoMapper;
+import com.backend.api.descarteeletronico.model.enums.EntityStatus;
+import com.backend.api.descarteeletronico.model.tipoproduto.TipoProduto;
+import com.backend.api.descarteeletronico.model.tipoproduto.dto.TipoProdutoRequest;
+import com.backend.api.descarteeletronico.model.tipoproduto.dto.TipoProdutoResponse;
+import com.backend.api.descarteeletronico.repository.TipoProdutoRepository;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class TipoProdutoServiceTest {
@@ -47,7 +46,14 @@ class TipoProdutoServiceTest {
     request = new TipoProdutoRequest("Computadores", "Notebooks, desktops e monitores");
     response =
         new TipoProdutoResponse(
-            id, request.nome(), request.descricaoExemplos(), 0L, null, null, EntityStatus.ACTIVE, null);
+            id,
+            request.nome(),
+            request.descricaoExemplos(),
+            0L,
+            null,
+            null,
+            EntityStatus.ACTIVE,
+            null);
   }
 
   @Test
@@ -144,8 +150,7 @@ class TipoProdutoServiceTest {
   void findAllReturnsOnlyActiveEntitiesAndMapsResponses() {
     Set<TipoProduto> tiposProduto = Set.of(tipoProduto);
     Set<TipoProdutoResponse> responses = Set.of(response);
-    when(tipoProdutoRepository.findAllByEntityStatus(EntityStatus.ACTIVE))
-        .thenReturn(tiposProduto);
+    when(tipoProdutoRepository.findAllByEntityStatus(EntityStatus.ACTIVE)).thenReturn(tiposProduto);
     when(tipoProdutoMapper.toResponseSet(tiposProduto)).thenReturn(responses);
 
     Set<TipoProdutoResponse> result = tipoProdutoService.findAll();
@@ -160,8 +165,7 @@ class TipoProdutoServiceTest {
   void findAllWithEmptyResultDelegatesToMapper() {
     Set<TipoProduto> tiposProduto = Set.of();
     Set<TipoProdutoResponse> responses = Set.of();
-    when(tipoProdutoRepository.findAllByEntityStatus(EntityStatus.ACTIVE))
-        .thenReturn(tiposProduto);
+    when(tipoProdutoRepository.findAllByEntityStatus(EntityStatus.ACTIVE)).thenReturn(tiposProduto);
     when(tipoProdutoMapper.toResponseSet(tiposProduto)).thenReturn(responses);
 
     Set<TipoProdutoResponse> result = tipoProdutoService.findAll();

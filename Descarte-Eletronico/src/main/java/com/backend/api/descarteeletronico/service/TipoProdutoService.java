@@ -7,13 +7,12 @@ import com.backend.api.descarteeletronico.model.tipoproduto.TipoProduto;
 import com.backend.api.descarteeletronico.model.tipoproduto.dto.TipoProdutoRequest;
 import com.backend.api.descarteeletronico.model.tipoproduto.dto.TipoProdutoResponse;
 import com.backend.api.descarteeletronico.repository.TipoProdutoRepository;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import java.time.LocalDateTime;
 import java.util.Set;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
