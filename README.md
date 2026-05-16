@@ -114,6 +114,8 @@ Principais variáveis:
 - `DB_USERNAME`: usuário usado pela aplicação.
 - `DB_PASSWORD`: senha usada pela aplicação.
 - `DB_URL`: URL JDBC completa. Quando definida, tem prioridade sobre `DB_HOST`, `DB_PORT` e `DB_NAME`.
+- `ADMIN_DEFAULT_EMAIL`: e-mail usado para criar o usuário administrador inicial.
+- `ADMIN_DEFAULT_PASSWORD`: senha usada para criar o usuário administrador inicial.
 
 ## Estrutura Do CRUD
 
@@ -258,6 +260,68 @@ Endpoints:
 - `PUT /api/v1/exemplos/{id}`
 - `DELETE /api/v1/exemplos/{id}`
 
+## Usuário Administrador E Roles
+
+A base possui apenas um usuário administrador e apenas uma role: `ADMIN`.
+
+Responsabilidades:
+
+- `Role` existe para autorização/proteção de rotas.
+- A configuração de JWT, filtros e autenticação não faz parte desta camada.
+- Não existe controller de `Role`, porque a aplicação não administra múltiplas roles.
+- `Usuario` implementa `UserDetails` e mapeia roles para authorities no padrão Spring Security,
+  por exemplo `ADMIN` vira `ROLE_ADMIN`.
+- Os controllers de negócio usam `@PreAuthorize("hasRole('ADMIN')")`.
+- O usuário administrador inicial é criado automaticamente quando a aplicação sobe sem usuário ativo.
+- A senha inicial é salva com `BCrypt`.
+- `ADMIN_DEFAULT_EMAIL` e `ADMIN_DEFAULT_PASSWORD` podem sobrescrever os valores padrão.
+- A migration `V4__create_roles_and_usuario_roles_tables.sql` cria `roles`,
+  `usuarios_admin_roles` e cadastra a role `ADMIN`.
+
+Valores padrão de desenvolvimento:
+
+```text
+ADMIN_DEFAULT_EMAIL=admin@descarte.local
+ADMIN_DEFAULT_PASSWORD=Admin@123
+```
+
+Endpoints do usuário administrador:
+
+- `GET /api/v1/usuarios/me`
+- `PATCH /api/v1/usuarios/me`
+
+Request de atualização:
+
+```json
+{
+  "nome": "Administrador",
+  "email": "admin@descarte.local",
+  "senha": "Admin@456"
+}
+```
+
+Response:
+
+```json
+{
+  "id": "4fbb2c8e-8737-4e24-9ef0-0db72a231ce8",
+  "nome": "Administrador",
+  "email": "admin@descarte.local",
+  "roles": [
+    {
+      "id": "00000000-0000-0000-0000-000000000001",
+      "nome": "ADMIN",
+      "version": 0,
+      "createdAt": "2026-05-04T21:30:00",
+      "updatedAt": "2026-05-04T21:30:00",
+      "entityStatus": "ACTIVE",
+      "deletedAt": null
+    }
+  ],
+  "entityStatus": "ACTIVE"
+}
+```
+
 Exemplo de body:
 
 ```json
@@ -314,6 +378,14 @@ O Swagger local fica em:
 http://localhost:8080/swagger-ui.html
 ```
 
+## Health Check
+
+O projeto usa Spring Boot Actuator e expõe o health check em:
+
+```text
+GET /health
+```
+
 ## CI
 
 O repositório possui workflow em `.github/workflows/ci.yml`.
@@ -324,7 +396,7 @@ Ele roda:
 ./mvnw test
 ```
 
-O workflow executa em `push` para `main`/`master` e em todo `pull_request`. Isso bloqueia regressões de compilação e testes antes de integrar mudanças.
+O workflow executa em `push` para `develop`/`main`/`master` e em todo `pull_request`. Isso bloqueia regressões de compilação e testes antes de integrar mudanças.
 
 ## Testes Com Testcontainers
 

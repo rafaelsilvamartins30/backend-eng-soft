@@ -5,85 +5,64 @@ import com.backend.api.descarteeletronico.exception.ResourceNotFoundException;
 import com.backend.api.descarteeletronico.mapper.UsuarioMapper;
 import com.backend.api.descarteeletronico.model.enums.EntityStatus;
 import com.backend.api.descarteeletronico.model.usuario.Usuario;
-import com.backend.api.descarteeletronico.model.usuario.dto.UsuarioRequest;
 import com.backend.api.descarteeletronico.model.usuario.dto.UsuarioResponse;
+import com.backend.api.descarteeletronico.model.usuario.dto.UsuarioUpdateRequest;
 import com.backend.api.descarteeletronico.repository.UsuarioRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.time.LocalDateTime;
-import java.util.Set;
-import java.util.UUID;
-import java.util.stream.Collectors;
+import org.springframework.util.StringUtils;
 
 @Service
 @RequiredArgsConstructor
-public class UsuarioService implements BaseService<UsuarioRequest, UsuarioResponse> {
+public class UsuarioService {
 
-    private final UsuarioRepository repository;
-    private final UsuarioMapper mapper;
+  private final UsuarioRepository usuarioRepository;
+  private final UsuarioMapper usuarioMapper;
+  private final PasswordEncoder passwordEncoder;
 
-    @Override
-    @Transactional
-    public UsuarioResponse create(UsuarioRequest request) {
-        if (repository.existsByEmailAndEntityStatusNot(request.email(), EntityStatus.DELETED)) {
-            throw new BusinessException("Já existe um usuário ativo cadastrado com este e-mail.");
-        }
+  @Transactional(readOnly = true)
+  public UsuarioResponse findMe() {
+    return usuarioMapper.toResponse(findAdminUsuario());
+  }
 
-        Usuario usuario = mapper.toEntity(request);
+  @Transactional
+  public UsuarioResponse updateMe(UsuarioUpdateRequest request) {
+    validateAtLeastOneField(request);
 
-        usuario.setEntityStatus(EntityStatus.ACTIVE);
-        usuario.setDeletedAt(null);
+    Usuario usuario = findAdminUsuario();
+    updateIfPresent(usuario, request);
 
-        Usuario savedUsuario = repository.save(usuario);
-        return mapper.toResponse(savedUsuario);
+    Usuario updatedUsuario = usuarioRepository.save(usuario);
+    return usuarioMapper.toResponse(updatedUsuario);
+  }
+
+  private void validateAtLeastOneField(UsuarioUpdateRequest request) {
+    if (!StringUtils.hasText(request.nome())
+        && !StringUtils.hasText(request.email())
+        && !StringUtils.hasText(request.senha())) {
+      throw new BusinessException("Informe ao menos um campo para atualização.");
+    }
+  }
+
+  private void updateIfPresent(Usuario usuario, UsuarioUpdateRequest request) {
+    if (StringUtils.hasText(request.nome())) {
+      usuario.setNome(request.nome());
     }
 
-    @Override
-    @Transactional
-    public UsuarioResponse update(UUID id, UsuarioRequest request) {
-        Usuario usuario = buscarUsuarioAtivo(id);
-
-        if (!usuario.getEmail().equals(request.email()) &&
-                repository.existsByEmailAndEntityStatusNot(request.email(), EntityStatus.DELETED)) {
-            throw new BusinessException("Já existe outro usuário cadastrado com este e-mail.");
-        }
-
-        mapper.updateEntityFromRequest(request, usuario);
-
-        Usuario updatedUsuario = repository.save(usuario);
-        return mapper.toResponse(updatedUsuario);
+    if (StringUtils.hasText(request.email())) {
+      usuario.setEmail(request.email());
     }
 
-    @Override
-    @Transactional
-    public void delete(UUID id) {
-        Usuario usuario = buscarUsuarioAtivo(id);
-
-        usuario.setEntityStatus(EntityStatus.DELETED);
-        usuario.setDeletedAt(LocalDateTime.now());
-
-        repository.save(usuario);
+    if (StringUtils.hasText(request.senha())) {
+      usuario.setSenha(passwordEncoder.encode(request.senha()));
     }
+  }
 
-    @Override
-    @Transactional(readOnly = true)
-    public UsuarioResponse findById(UUID id) {
-        return mapper.toResponse(buscarUsuarioAtivo(id));
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public Set<UsuarioResponse> findAll() {
-        return repository.findAllByEntityStatusNot(EntityStatus.DELETED)
-                .stream()
-                .map(mapper::toResponse)
-                .collect(Collectors.toSet());
-    }
-
-    private Usuario buscarUsuarioAtivo(UUID id) {
-        return repository.findByIdAndEntityStatusNot(id, EntityStatus.DELETED)
-                .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado."));
-    }
+  private Usuario findAdminUsuario() {
+    return usuarioRepository
+        .findFirstByEntityStatusOrderByCreatedAtAsc(EntityStatus.ACTIVE)
+        .orElseThrow(() -> new ResourceNotFoundException("Usuário administrador não encontrado"));
+  }
 }
