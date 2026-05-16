@@ -114,6 +114,8 @@ Principais variáveis:
 - `DB_USERNAME`: usuário usado pela aplicação.
 - `DB_PASSWORD`: senha usada pela aplicação.
 - `DB_URL`: URL JDBC completa. Quando definida, tem prioridade sobre `DB_HOST`, `DB_PORT` e `DB_NAME`.
+- `ADMIN_DEFAULT_EMAIL`: e-mail usado para criar o usuário administrador inicial.
+- `ADMIN_DEFAULT_PASSWORD`: senha usada para criar o usuário administrador inicial.
 
 ## Estrutura Do CRUD
 
@@ -372,6 +374,14 @@ O Swagger local fica em:
 http://localhost:8080/swagger-ui.html
 ```
 
+## Health Check
+
+O projeto usa Spring Boot Actuator e expõe o health check em:
+
+```text
+GET /health
+```
+
 ## CI
 
 O repositório possui workflow em `.github/workflows/ci.yml`.
@@ -382,7 +392,7 @@ Ele roda:
 ./mvnw test
 ```
 
-O workflow executa em `push` para `main`/`master` e em todo `pull_request`. Isso bloqueia regressões de compilação e testes antes de integrar mudanças.
+O workflow executa em `push` para `develop`/`main`/`master` e em todo `pull_request`. Isso bloqueia regressões de compilação e testes antes de integrar mudanças.
 
 ## Testes Com Testcontainers
 

@@ -1,11 +1,10 @@
 package com.backend.api.descarteeletronico.controller;
 
 import com.backend.api.descarteeletronico.exception.ErrorResponseDTO;
-import com.backend.api.descarteeletronico.model.usuario.dto.UsuarioRequest;
 import com.backend.api.descarteeletronico.model.usuario.dto.UsuarioResponse;
+import com.backend.api.descarteeletronico.model.usuario.dto.UsuarioUpdateRequest;
 import com.backend.api.descarteeletronico.service.UsuarioService;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -15,7 +14,6 @@ import jakarta.validation.Valid;
 import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;

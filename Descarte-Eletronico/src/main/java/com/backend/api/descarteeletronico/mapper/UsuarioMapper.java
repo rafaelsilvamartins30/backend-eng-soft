@@ -1,14 +1,11 @@
 package com.backend.api.descarteeletronico.mapper;
 
 import com.backend.api.descarteeletronico.model.usuario.Usuario;
-import com.backend.api.descarteeletronico.model.usuario.dto.UsuarioRequest;
 import com.backend.api.descarteeletronico.model.usuario.dto.UsuarioResponse;
 import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
-import org.mapstruct.MappingTarget;
 
-@Mapper(componentModel = "spring")
-public interface UsuarioMapper extends BaseMapper<Usuario, UsuarioRequest, UsuarioResponse> {
+@Mapper(componentModel = "spring", uses = RoleMapper.class)
+public interface UsuarioMapper {
 
   @Override
   @Mapping(target = "id", ignore = true)

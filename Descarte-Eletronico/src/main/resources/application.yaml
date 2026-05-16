@@ -16,3 +16,15 @@ spring:
   flyway:
     enabled: true
     locations: classpath:db/migration
+
+management:
+  endpoints:
+    web:
+      base-path: /
+      exposure:
+        include: health
+
+app:
+  admin:
+    default-email: ${ADMIN_DEFAULT_EMAIL:admin@descarte.local}
+    default-password: ${ADMIN_DEFAULT_PASSWORD:Admin@123}
