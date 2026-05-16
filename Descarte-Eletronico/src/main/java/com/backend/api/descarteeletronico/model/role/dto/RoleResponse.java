@@ -3,15 +3,12 @@ package com.backend.api.descarteeletronico.model.role.dto;
 import com.backend.api.descarteeletronico.model.enums.EntityStatus;
 import com.backend.api.descarteeletronico.model.role.RoleName;
 import io.swagger.v3.oas.annotations.media.Schema;
-
 import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Schema(description = "Dados retornados para uma role")
 public record RoleResponse(
-    @Schema(
-            description = "Identificador da role",
-            example = "00000000-0000-0000-0000-000000000001")
+    @Schema(description = "Identificador da role", example = "00000000-0000-0000-0000-000000000001")
         UUID id,
     @Schema(description = "Nome da role", example = "ADMIN") RoleName nome,
     @Schema(description = "Versão para controle de concorrência otimista", example = "0")

@@ -11,15 +11,11 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import java.util.Set;
-import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -27,73 +23,37 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/v1/usuarios")
 @RequiredArgsConstructor
-@Tag(name = "Usuários", description = "CRUD de usuários administradores")
+@PreAuthorize("hasRole('ADMIN')")
+@Tag(name = "Usuário Admin", description = "Endpoints do único usuário administrador da aplicação")
 public class UsuarioController {
 
   private final UsuarioService usuarioService;
 
-  @Operation(summary = "Cria um usuário administrador")
-  @ApiResponses({
-    @ApiResponse(
-        responseCode = "201",
-        description = "Usuário criado",
-        content = @Content(schema = @Schema(implementation = UsuarioResponse.class))),
-    @ApiResponse(
-        responseCode = "400",
-        description = "Dados inválidos ou regra de negócio violada",
-        content = @Content(schema = @Schema(implementation = ErrorResponseDTO.class))),
-    @ApiResponse(
-        responseCode = "500",
-        description = "Erro interno inesperado",
-        content = @Content(schema = @Schema(implementation = ErrorResponseDTO.class)))
-  })
-  @PostMapping
-  public ResponseEntity<UsuarioResponse> create(@Valid @RequestBody UsuarioRequest request) {
-    return ResponseEntity.status(HttpStatus.CREATED).body(usuarioService.create(request));
-  }
-
-  @Operation(summary = "Busca um usuário administrador por ID")
+  @Operation(summary = "Busca o usuário administrador atual")
   @ApiResponses({
     @ApiResponse(
         responseCode = "200",
-        description = "Usuário encontrado",
+        description = "Usuário administrador encontrado",
         content = @Content(schema = @Schema(implementation = UsuarioResponse.class))),
     @ApiResponse(
         responseCode = "404",
-        description = "Usuário não encontrado",
+        description = "Usuário administrador não encontrado",
         content = @Content(schema = @Schema(implementation = ErrorResponseDTO.class))),
     @ApiResponse(
         responseCode = "500",
         description = "Erro interno inesperado",
         content = @Content(schema = @Schema(implementation = ErrorResponseDTO.class)))
   })
-  @GetMapping("/{id}")
-  public ResponseEntity<UsuarioResponse> findById(
-      @Parameter(description = "ID do usuário administrador") @PathVariable UUID id) {
-    return ResponseEntity.ok(usuarioService.findById(id));
+  @GetMapping("/me")
+  public ResponseEntity<UsuarioResponse> findMe() {
+    return ResponseEntity.ok(usuarioService.findMe());
   }
 
-  @Operation(summary = "Lista usuários administradores ativos")
+  @Operation(summary = "Atualiza dados do usuário administrador atual")
   @ApiResponses({
     @ApiResponse(
         responseCode = "200",
-        description = "Usuários listados",
-        content = @Content(schema = @Schema(implementation = UsuarioResponse.class))),
-    @ApiResponse(
-        responseCode = "500",
-        description = "Erro interno inesperado",
-        content = @Content(schema = @Schema(implementation = ErrorResponseDTO.class)))
-  })
-  @GetMapping
-  public ResponseEntity<Set<UsuarioResponse>> findAll() {
-    return ResponseEntity.ok(usuarioService.findAll());
-  }
-
-  @Operation(summary = "Atualiza um usuário administrador")
-  @ApiResponses({
-    @ApiResponse(
-        responseCode = "200",
-        description = "Usuário atualizado",
+        description = "Usuário administrador atualizado",
         content = @Content(schema = @Schema(implementation = UsuarioResponse.class))),
     @ApiResponse(
         responseCode = "400",
@@ -101,36 +61,16 @@ public class UsuarioController {
         content = @Content(schema = @Schema(implementation = ErrorResponseDTO.class))),
     @ApiResponse(
         responseCode = "404",
-        description = "Usuário não encontrado",
+        description = "Usuário administrador não encontrado",
         content = @Content(schema = @Schema(implementation = ErrorResponseDTO.class))),
     @ApiResponse(
         responseCode = "500",
         description = "Erro interno inesperado",
         content = @Content(schema = @Schema(implementation = ErrorResponseDTO.class)))
   })
-  @PutMapping("/{id}")
-  public ResponseEntity<UsuarioResponse> update(
-      @Parameter(description = "ID do usuário administrador") @PathVariable UUID id,
-      @Valid @RequestBody UsuarioRequest request) {
-    return ResponseEntity.ok(usuarioService.update(id, request));
-  }
-
-  @Operation(summary = "Remove um usuário administrador com soft delete")
-  @ApiResponses({
-    @ApiResponse(responseCode = "204", description = "Usuário removido"),
-    @ApiResponse(
-        responseCode = "404",
-        description = "Usuário não encontrado",
-        content = @Content(schema = @Schema(implementation = ErrorResponseDTO.class))),
-    @ApiResponse(
-        responseCode = "500",
-        description = "Erro interno inesperado",
-        content = @Content(schema = @Schema(implementation = ErrorResponseDTO.class)))
-  })
-  @DeleteMapping("/{id}")
-  public ResponseEntity<Void> delete(
-      @Parameter(description = "ID do usuário administrador") @PathVariable UUID id) {
-    usuarioService.delete(id);
-    return ResponseEntity.noContent().build();
+  @PatchMapping("/me")
+  public ResponseEntity<UsuarioResponse> updateMe(
+      @Valid @RequestBody UsuarioUpdateRequest request) {
+    return ResponseEntity.ok(usuarioService.updateMe(request));
   }
 }

@@ -6,6 +6,7 @@ import com.backend.api.descarteeletronico.model.role.RoleName;
 import com.backend.api.descarteeletronico.model.usuario.Usuario;
 import com.backend.api.descarteeletronico.repository.RoleRepository;
 import com.backend.api.descarteeletronico.repository.UsuarioRepository;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;
@@ -13,8 +14,6 @@ import org.springframework.boot.ApplicationRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.Set;
 
 @Component
 @RequiredArgsConstructor

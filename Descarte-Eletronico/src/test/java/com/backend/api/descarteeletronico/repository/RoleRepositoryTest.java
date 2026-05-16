@@ -1,8 +1,11 @@
 package com.backend.api.descarteeletronico.repository;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.backend.api.descarteeletronico.model.enums.EntityStatus;
 import com.backend.api.descarteeletronico.model.role.Role;
 import com.backend.api.descarteeletronico.model.role.RoleName;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
@@ -15,10 +18,6 @@ import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
-
-import java.util.Optional;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 @DataJpaTest
 @Testcontainers(disabledWithoutDocker = true)
@@ -66,11 +65,13 @@ class RoleRepositoryTest {
 
   @Test
   void findByIdAndEntityStatusIgnoresDeletedEntity() {
-    Role deleted = roleRepository.findByNomeAndEntityStatus(RoleName.ADMIN, EntityStatus.ACTIVE).orElseThrow();
+    Role deleted =
+        roleRepository.findByNomeAndEntityStatus(RoleName.ADMIN, EntityStatus.ACTIVE).orElseThrow();
     deleted.setEntityStatus(EntityStatus.DELETED);
     Role saved = roleRepository.saveAndFlush(deleted);
 
-    Optional<Role> result = roleRepository.findByIdAndEntityStatus(saved.getId(), EntityStatus.ACTIVE);
+    Optional<Role> result =
+        roleRepository.findByIdAndEntityStatus(saved.getId(), EntityStatus.ACTIVE);
 
     assertThat(result).isEmpty();
   }

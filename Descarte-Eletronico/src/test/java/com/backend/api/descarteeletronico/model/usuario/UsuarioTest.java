@@ -1,14 +1,13 @@
 package com.backend.api.descarteeletronico.model.usuario;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.backend.api.descarteeletronico.model.enums.EntityStatus;
 import com.backend.api.descarteeletronico.model.role.Role;
 import com.backend.api.descarteeletronico.model.role.RoleName;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
-
-import java.util.Set;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 class UsuarioTest {
 

@@ -13,11 +13,10 @@ import com.backend.api.descarteeletronico.exception.ResourceNotFoundException;
 import com.backend.api.descarteeletronico.mapper.UsuarioMapper;
 import com.backend.api.descarteeletronico.model.enums.EntityStatus;
 import com.backend.api.descarteeletronico.model.usuario.Usuario;
-import com.backend.api.descarteeletronico.model.usuario.dto.UsuarioRequest;
 import com.backend.api.descarteeletronico.model.usuario.dto.UsuarioResponse;
+import com.backend.api.descarteeletronico.model.usuario.dto.UsuarioUpdateRequest;
 import com.backend.api.descarteeletronico.repository.UsuarioRepository;
 import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -25,6 +24,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 @ExtendWith(MockitoExtension.class)
 class UsuarioServiceTest {
@@ -33,192 +33,120 @@ class UsuarioServiceTest {
 
   @Mock private UsuarioMapper usuarioMapper;
 
+  @Mock private PasswordEncoder passwordEncoder;
+
   @InjectMocks private UsuarioService usuarioService;
 
   private UUID id;
   private Usuario usuario;
-  private UsuarioRequest request;
   private UsuarioResponse response;
 
   @BeforeEach
   void setUp() {
     id = UUID.randomUUID();
     usuario = new Usuario("Maria Silva", "maria@descarte.com", "SenhaForte123");
-    request = new UsuarioRequest(usuario.getNome(), usuario.getEmail(), usuario.getSenha());
     response =
         new UsuarioResponse(
-            id, request.nome(), request.email(), 0L, null, null, EntityStatus.ACTIVE, null);
+            id, usuario.getNome(), usuario.getEmail(), 0L, null, null, EntityStatus.ACTIVE, null);
   }
 
   @Test
-  void createSavesActiveEntityAndReturnsResponse() {
-    when(usuarioRepository.existsByEmailAndEntityStatus(request.email(), EntityStatus.ACTIVE))
-        .thenReturn(false);
-    when(usuarioMapper.toEntity(request)).thenReturn(usuario);
+  void findMeReturnsMappedAdminUser() {
+    when(usuarioRepository.findFirstByEntityStatusOrderByCreatedAtAsc(EntityStatus.ACTIVE))
+        .thenReturn(Optional.of(usuario));
+    when(usuarioMapper.toResponse(usuario)).thenReturn(response);
+
+    UsuarioResponse result = usuarioService.findMe();
+
+    assertThat(result).isEqualTo(response);
+    verify(usuarioRepository).findFirstByEntityStatusOrderByCreatedAtAsc(EntityStatus.ACTIVE);
+    verify(usuarioMapper).toResponse(usuario);
+    verifyNoMoreInteractions(usuarioRepository, usuarioMapper);
+    verifyNoInteractions(passwordEncoder);
+  }
+
+  @Test
+  void findMeThrowsWhenAdminUserDoesNotExist() {
+    when(usuarioRepository.findFirstByEntityStatusOrderByCreatedAtAsc(EntityStatus.ACTIVE))
+        .thenReturn(Optional.empty());
+
+    assertThatThrownBy(() -> usuarioService.findMe())
+        .isInstanceOf(ResourceNotFoundException.class)
+        .hasMessage("Usuário administrador não encontrado");
+    verify(usuarioRepository).findFirstByEntityStatusOrderByCreatedAtAsc(EntityStatus.ACTIVE);
+    verifyNoInteractions(usuarioMapper, passwordEncoder);
+    verifyNoMoreInteractions(usuarioRepository);
+  }
+
+  @Test
+  void updateMeUpdatesProvidedFieldsEncodesPasswordAndReturnsResponse() {
+    UsuarioUpdateRequest request =
+        new UsuarioUpdateRequest("Admin Atualizado", "admin@descarte.local", "NovaSenha123");
+    when(usuarioRepository.findFirstByEntityStatusOrderByCreatedAtAsc(EntityStatus.ACTIVE))
+        .thenReturn(Optional.of(usuario));
+    when(passwordEncoder.encode(request.senha())).thenReturn("senha-codificada");
     when(usuarioRepository.save(usuario)).thenReturn(usuario);
     when(usuarioMapper.toResponse(usuario)).thenReturn(response);
 
-    UsuarioResponse result = usuarioService.create(request);
+    UsuarioResponse result = usuarioService.updateMe(request);
 
     assertThat(result).isEqualTo(response);
-    assertThat(usuario.getEntityStatus()).isEqualTo(EntityStatus.ACTIVE);
-    assertThat(usuario.getDeletedAt()).isNull();
-    verify(usuarioRepository).existsByEmailAndEntityStatus(request.email(), EntityStatus.ACTIVE);
-    verify(usuarioMapper).toEntity(request);
+    assertThat(usuario.getNome()).isEqualTo(request.nome());
+    assertThat(usuario.getEmail()).isEqualTo(request.email());
+    assertThat(usuario.getSenha()).isEqualTo("senha-codificada");
+    verify(usuarioRepository).findFirstByEntityStatusOrderByCreatedAtAsc(EntityStatus.ACTIVE);
+    verify(passwordEncoder).encode(request.senha());
     verify(usuarioRepository).save(usuario);
     verify(usuarioMapper).toResponse(usuario);
-    verifyNoMoreInteractions(usuarioRepository, usuarioMapper);
+    verifyNoMoreInteractions(usuarioRepository, usuarioMapper, passwordEncoder);
   }
 
   @Test
-  void createThrowsWhenActiveEmailAlreadyExists() {
-    when(usuarioRepository.existsByEmailAndEntityStatus(request.email(), EntityStatus.ACTIVE))
-        .thenReturn(true);
-
-    assertThatThrownBy(() -> usuarioService.create(request))
-        .isInstanceOf(BusinessException.class)
-        .hasMessage("Já existe um usuário ativo cadastrado com este e-mail.");
-    verify(usuarioRepository).existsByEmailAndEntityStatus(request.email(), EntityStatus.ACTIVE);
-    verify(usuarioRepository, never()).save(usuario);
-    verifyNoInteractions(usuarioMapper);
-    verifyNoMoreInteractions(usuarioRepository);
-  }
-
-  @Test
-  void updateFindsActiveEntityAppliesMapperAndReturnsResponse() {
-    when(usuarioRepository.findByIdAndEntityStatus(id, EntityStatus.ACTIVE))
+  void updateMeIgnoresBlankFieldsAndUpdatesOnlyProvidedValues() {
+    UsuarioUpdateRequest request = new UsuarioUpdateRequest("Admin Atualizado", " ", null);
+    when(usuarioRepository.findFirstByEntityStatusOrderByCreatedAtAsc(EntityStatus.ACTIVE))
         .thenReturn(Optional.of(usuario));
     when(usuarioRepository.save(usuario)).thenReturn(usuario);
     when(usuarioMapper.toResponse(usuario)).thenReturn(response);
 
-    UsuarioResponse result = usuarioService.update(id, request);
+    UsuarioResponse result = usuarioService.updateMe(request);
 
     assertThat(result).isEqualTo(response);
-    verify(usuarioRepository).findByIdAndEntityStatus(id, EntityStatus.ACTIVE);
-    verify(usuarioMapper).updateEntityFromRequest(request, usuario);
+    assertThat(usuario.getNome()).isEqualTo(request.nome());
+    assertThat(usuario.getEmail()).isEqualTo("maria@descarte.com");
+    assertThat(usuario.getSenha()).isEqualTo("SenhaForte123");
+    verify(usuarioRepository).findFirstByEntityStatusOrderByCreatedAtAsc(EntityStatus.ACTIVE);
     verify(usuarioRepository).save(usuario);
     verify(usuarioMapper).toResponse(usuario);
+    verifyNoInteractions(passwordEncoder);
     verifyNoMoreInteractions(usuarioRepository, usuarioMapper);
   }
 
   @Test
-  void updateThrowsWhenAnotherActiveUserHasSameEmail() {
-    UsuarioRequest requestWithNewEmail =
-        new UsuarioRequest(usuario.getNome(), "duplicado@descarte.com", usuario.getSenha());
-    when(usuarioRepository.findByIdAndEntityStatus(id, EntityStatus.ACTIVE))
-        .thenReturn(Optional.of(usuario));
-    when(usuarioRepository.existsByEmailAndEntityStatus(
-            requestWithNewEmail.email(), EntityStatus.ACTIVE))
-        .thenReturn(true);
+  void updateMeThrowsWhenRequestHasNoFieldsToUpdate() {
+    UsuarioUpdateRequest request = new UsuarioUpdateRequest(" ", null, "");
 
-    assertThatThrownBy(() -> usuarioService.update(id, requestWithNewEmail))
+    assertThatThrownBy(() -> usuarioService.updateMe(request))
         .isInstanceOf(BusinessException.class)
-        .hasMessage("Já existe outro usuário cadastrado com este e-mail.");
-    verify(usuarioRepository).findByIdAndEntityStatus(id, EntityStatus.ACTIVE);
-    verify(usuarioRepository)
-        .existsByEmailAndEntityStatus(requestWithNewEmail.email(), EntityStatus.ACTIVE);
+        .hasMessage("Informe ao menos um campo para atualização.");
+    verify(usuarioRepository, never())
+        .findFirstByEntityStatusOrderByCreatedAtAsc(EntityStatus.ACTIVE);
     verify(usuarioRepository, never()).save(usuario);
-    verifyNoInteractions(usuarioMapper);
-    verifyNoMoreInteractions(usuarioRepository);
+    verifyNoInteractions(usuarioMapper, passwordEncoder);
   }
 
   @Test
-  void updateThrowsWhenEntityDoesNotExist() {
-    when(usuarioRepository.findByIdAndEntityStatus(id, EntityStatus.ACTIVE))
+  void updateMeThrowsWhenAdminUserDoesNotExist() {
+    UsuarioUpdateRequest request = new UsuarioUpdateRequest("Admin Atualizado", null, null);
+    when(usuarioRepository.findFirstByEntityStatusOrderByCreatedAtAsc(EntityStatus.ACTIVE))
         .thenReturn(Optional.empty());
 
-    assertThatThrownBy(() -> usuarioService.update(id, request))
+    assertThatThrownBy(() -> usuarioService.updateMe(request))
         .isInstanceOf(ResourceNotFoundException.class)
-        .hasMessage("Usuário não encontrado");
-    verify(usuarioRepository).findByIdAndEntityStatus(id, EntityStatus.ACTIVE);
+        .hasMessage("Usuário administrador não encontrado");
+    verify(usuarioRepository).findFirstByEntityStatusOrderByCreatedAtAsc(EntityStatus.ACTIVE);
     verify(usuarioRepository, never()).save(usuario);
-    verifyNoInteractions(usuarioMapper);
+    verifyNoInteractions(usuarioMapper, passwordEncoder);
     verifyNoMoreInteractions(usuarioRepository);
-  }
-
-  @Test
-  void deleteMarksEntityAsDeletedAndPersistsSoftDelete() {
-    when(usuarioRepository.findByIdAndEntityStatus(id, EntityStatus.ACTIVE))
-        .thenReturn(Optional.of(usuario));
-
-    usuarioService.delete(id);
-
-    assertThat(usuario.getEntityStatus()).isEqualTo(EntityStatus.DELETED);
-    assertThat(usuario.getDeletedAt()).isNotNull();
-    verify(usuarioRepository).findByIdAndEntityStatus(id, EntityStatus.ACTIVE);
-    verify(usuarioRepository).save(usuario);
-    verifyNoInteractions(usuarioMapper);
-    verifyNoMoreInteractions(usuarioRepository);
-  }
-
-  @Test
-  void deleteThrowsWhenEntityDoesNotExist() {
-    when(usuarioRepository.findByIdAndEntityStatus(id, EntityStatus.ACTIVE))
-        .thenReturn(Optional.empty());
-
-    assertThatThrownBy(() -> usuarioService.delete(id))
-        .isInstanceOf(ResourceNotFoundException.class)
-        .hasMessage("Usuário não encontrado");
-    verify(usuarioRepository).findByIdAndEntityStatus(id, EntityStatus.ACTIVE);
-    verify(usuarioRepository, never()).save(usuario);
-    verifyNoInteractions(usuarioMapper);
-    verifyNoMoreInteractions(usuarioRepository);
-  }
-
-  @Test
-  void findByIdReturnsMappedActiveEntity() {
-    when(usuarioRepository.findByIdAndEntityStatus(id, EntityStatus.ACTIVE))
-        .thenReturn(Optional.of(usuario));
-    when(usuarioMapper.toResponse(usuario)).thenReturn(response);
-
-    UsuarioResponse result = usuarioService.findById(id);
-
-    assertThat(result).isEqualTo(response);
-    verify(usuarioRepository).findByIdAndEntityStatus(id, EntityStatus.ACTIVE);
-    verify(usuarioMapper).toResponse(usuario);
-    verifyNoMoreInteractions(usuarioRepository, usuarioMapper);
-  }
-
-  @Test
-  void findByIdThrowsWhenEntityDoesNotExist() {
-    when(usuarioRepository.findByIdAndEntityStatus(id, EntityStatus.ACTIVE))
-        .thenReturn(Optional.empty());
-
-    assertThatThrownBy(() -> usuarioService.findById(id))
-        .isInstanceOf(ResourceNotFoundException.class)
-        .hasMessage("Usuário não encontrado");
-    verify(usuarioRepository).findByIdAndEntityStatus(id, EntityStatus.ACTIVE);
-    verifyNoInteractions(usuarioMapper);
-    verifyNoMoreInteractions(usuarioRepository);
-  }
-
-  @Test
-  void findAllReturnsOnlyActiveEntitiesAndMapsResponses() {
-    Set<Usuario> usuarios = Set.of(usuario);
-    Set<UsuarioResponse> responses = Set.of(response);
-    when(usuarioRepository.findAllByEntityStatus(EntityStatus.ACTIVE)).thenReturn(usuarios);
-    when(usuarioMapper.toResponseSet(usuarios)).thenReturn(responses);
-
-    Set<UsuarioResponse> result = usuarioService.findAll();
-
-    assertThat(result).isEqualTo(responses);
-    verify(usuarioRepository).findAllByEntityStatus(EntityStatus.ACTIVE);
-    verify(usuarioMapper).toResponseSet(usuarios);
-    verifyNoMoreInteractions(usuarioRepository, usuarioMapper);
-  }
-
-  @Test
-  void findAllWithEmptyResultDelegatesToMapper() {
-    Set<Usuario> usuarios = Set.of();
-    Set<UsuarioResponse> responses = Set.of();
-    when(usuarioRepository.findAllByEntityStatus(EntityStatus.ACTIVE)).thenReturn(usuarios);
-    when(usuarioMapper.toResponseSet(usuarios)).thenReturn(responses);
-
-    Set<UsuarioResponse> result = usuarioService.findAll();
-
-    assertThat(result).isEmpty();
-    verify(usuarioRepository).findAllByEntityStatus(EntityStatus.ACTIVE);
-    verify(usuarioMapper).toResponseSet(usuarios);
-    verifyNoMoreInteractions(usuarioRepository, usuarioMapper);
   }
 }

@@ -10,6 +10,9 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.Table;
+import java.util.LinkedHashSet;
+import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -17,10 +20,6 @@ import lombok.Setter;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
-
-import java.util.LinkedHashSet;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 @Entity
 @Table(name = "usuarios_admin")
@@ -46,6 +45,12 @@ public class Usuario extends BaseEntity implements UserDetails {
       inverseJoinColumns = @JoinColumn(name = "role_id"))
   private Set<Role> roles = new LinkedHashSet<>();
 
+  public Usuario(String nome, String email, String senha) {
+    this.nome = nome;
+    this.email = email;
+    this.senha = senha;
+  }
+
   @Override
   public Set<GrantedAuthority> getAuthorities() {
     return roles.stream()
@@ -68,12 +73,18 @@ public class Usuario extends BaseEntity implements UserDetails {
     return true;
   }
 
-  @Column(name = "nome", nullable = false, length = 100)
-  private String nome;
+  @Override
+  public boolean isAccountNonLocked() {
+    return getEntityStatus() == EntityStatus.ACTIVE;
+  }
 
-  @Column(name = "email", nullable = false, length = 100)
-  private String email;
+  @Override
+  public boolean isCredentialsNonExpired() {
+    return true;
+  }
 
-  @Column(name = "senha", nullable = false, length = 255)
-  private String senha;
+  @Override
+  public boolean isEnabled() {
+    return getEntityStatus() == EntityStatus.ACTIVE;
+  }
 }
