@@ -11,6 +11,8 @@ public interface UsuarioRepository extends JpaRepository<Usuario, UUID> {
 
   Optional<Usuario> findByIdAndEntityStatus(UUID id, EntityStatus entityStatus);
 
+  Optional<Usuario> findByEmailAndEntityStatus(String email, EntityStatus entityStatus);
+
   Set<Usuario> findAllByEntityStatus(EntityStatus entityStatus);
 
   boolean existsByEmailAndEntityStatus(String email, EntityStatus entityStatus);

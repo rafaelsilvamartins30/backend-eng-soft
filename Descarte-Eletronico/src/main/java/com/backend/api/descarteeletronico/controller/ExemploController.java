@@ -31,7 +31,6 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/v1/exemplos")
 @RequiredArgsConstructor
-@PreAuthorize("hasRole('ADMIN')")
 @Tag(name = "Exemplos", description = "CRUD de referência para novas entidades")
 public class ExemploController {
 
@@ -70,6 +69,7 @@ public class ExemploController {
         description = "Erro interno inesperado",
         content = @Content(schema = @Schema(implementation = ErrorResponseDTO.class)))
   })
+  @PreAuthorize("hasRole('ADMIN')")
   @PostMapping
   public ResponseEntity<ExemploResponse> create(@Valid @RequestBody ExemploRequest request) {
     return ResponseEntity.status(HttpStatus.CREATED).body(exemploService.create(request));
@@ -146,6 +146,7 @@ public class ExemploController {
         description = "Erro interno inesperado",
         content = @Content(schema = @Schema(implementation = ErrorResponseDTO.class)))
   })
+  @PreAuthorize("hasRole('ADMIN')")
   @PutMapping("/{id}")
   public ResponseEntity<ExemploResponse> update(
       @Parameter(description = "ID do exemplo") @PathVariable UUID id,
@@ -165,6 +166,7 @@ public class ExemploController {
         description = "Erro interno inesperado",
         content = @Content(schema = @Schema(implementation = ErrorResponseDTO.class)))
   })
+  @PreAuthorize("hasRole('ADMIN')")
   @DeleteMapping("/{id}")
   public ResponseEntity<Void> delete(
       @Parameter(description = "ID do exemplo") @PathVariable UUID id) {
