@@ -1,23 +1,5 @@
 package com.backend.api.descarteeletronico.controller;
 
-import com.backend.api.descarteeletronico.exception.BusinessException;
-import com.backend.api.descarteeletronico.exception.GlobalExceptionHandler;
-import com.backend.api.descarteeletronico.exception.ResourceNotFoundException;
-import com.backend.api.descarteeletronico.model.enums.EntityStatus;
-import com.backend.api.descarteeletronico.model.pontocoleta.dto.PontoColetaRequest;
-import com.backend.api.descarteeletronico.model.pontocoleta.dto.PontoColetaResponse;
-import com.backend.api.descarteeletronico.service.PontoColetaService;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.springframework.http.MediaType;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-
-import java.math.BigDecimal;
-import java.util.Set;
-import java.util.UUID;
-
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -30,6 +12,23 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import com.backend.api.descarteeletronico.exception.BusinessException;
+import com.backend.api.descarteeletronico.exception.GlobalExceptionHandler;
+import com.backend.api.descarteeletronico.exception.ResourceNotFoundException;
+import com.backend.api.descarteeletronico.model.enums.EntityStatus;
+import com.backend.api.descarteeletronico.model.pontocoleta.dto.PontoColetaRequest;
+import com.backend.api.descarteeletronico.model.pontocoleta.dto.PontoColetaResponse;
+import com.backend.api.descarteeletronico.service.PontoColetaService;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.math.BigDecimal;
+import java.util.Set;
+import java.util.UUID;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 class PontoColetaControllerTest {
 

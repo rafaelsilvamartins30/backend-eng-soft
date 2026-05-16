@@ -258,6 +258,64 @@ Endpoints:
 - `PUT /api/v1/exemplos/{id}`
 - `DELETE /api/v1/exemplos/{id}`
 
+## Endpoints De Usuários Administradores
+
+Base path:
+
+```text
+/api/v1/usuarios
+```
+
+Endpoints:
+
+- `POST /api/v1/usuarios`
+- `GET /api/v1/usuarios`
+- `GET /api/v1/usuarios/{id}`
+- `PUT /api/v1/usuarios/{id}`
+- `DELETE /api/v1/usuarios/{id}`
+
+Request:
+
+```json
+{
+  "nome": "Maria Silva",
+  "email": "maria@descarte.com",
+  "senha": "SenhaForte123"
+}
+```
+
+Response:
+
+```json
+{
+  "id": "4fbb2c8e-8737-4e24-9ef0-0db72a231ce8",
+  "nome": "Maria Silva",
+  "email": "maria@descarte.com",
+  "version": 0,
+  "createdAt": "2026-05-04T21:30:00",
+  "updatedAt": "2026-05-04T21:30:00",
+  "entityStatus": "ACTIVE",
+  "deletedAt": null
+}
+```
+
+Regras:
+
+- `nome`, `email` e `senha` são obrigatórios.
+- `nome` e `email` aceitam no máximo 100 caracteres.
+- `senha` aceita no máximo 255 caracteres.
+- `email` deve ter formato válido.
+- Só pode existir um usuário `ACTIVE` por e-mail.
+- Usuários removidos usam soft delete (`entityStatus = DELETED` e `deletedAt` preenchido).
+- Listagem e busca por ID retornam apenas usuários `ACTIVE`.
+- A senha entra apenas no request; ela não é retornada nos DTOs de response.
+
+Testes:
+
+- `UsuarioServiceTest` cobre criação, atualização, soft delete, busca, listagem e regras de e-mail duplicado.
+- `UsuarioControllerTest` cobre respostas `2xx`, validação `400`, regra de negócio `400`, `404` e erro inesperado `500`.
+- `UsuarioRepositoryTest` usa Testcontainers com PostgreSQL e Flyway para validar migration e queries filtradas por `EntityStatus.ACTIVE`.
+
 Exemplo de body:
 
 ```json

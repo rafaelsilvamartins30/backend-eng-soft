@@ -3,7 +3,6 @@ package com.backend.api.descarteeletronico.model.pontocoleta.dto;
 import com.backend.api.descarteeletronico.model.enums.EntityStatus;
 import com.backend.api.descarteeletronico.model.tipoproduto.dto.TipoProdutoResponse;
 import io.swagger.v3.oas.annotations.media.Schema;
-
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Set;
@@ -18,7 +17,9 @@ public record PontoColetaResponse(
     @Schema(description = "Nome do ponto de coleta", example = "EcoPonto Centro") String nome,
     @Schema(description = "Endereço do ponto de coleta", example = "Rua das Flores, 123")
         String endereco,
-    @Schema(description = "Descrição do ponto de coleta", example = "Recebe eletrônicos de pequeno porte")
+    @Schema(
+            description = "Descrição do ponto de coleta",
+            example = "Recebe eletrônicos de pequeno porte")
         String descricao,
     @Schema(description = "Latitude do ponto de coleta", example = "-23.5505200")
         BigDecimal latitude,

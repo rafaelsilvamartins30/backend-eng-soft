@@ -7,7 +7,6 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
-
 import java.math.BigDecimal;
 import java.util.Set;
 import java.util.UUID;
@@ -22,7 +21,9 @@ public record PontoColetaRequest(
         @NotBlank(message = "O endereço é obrigatório")
         @Size(max = 255, message = "O endereço deve ter no máximo 255 caracteres")
         String endereco,
-    @Schema(description = "Descrição do ponto de coleta", example = "Recebe eletrônicos de pequeno porte")
+    @Schema(
+            description = "Descrição do ponto de coleta",
+            example = "Recebe eletrônicos de pequeno porte")
         @NotBlank(message = "A descricao é obrigatória")
         @Size(max = 500, message = "A descricao deve ter no máximo 500 caracteres")
         String descricao,
