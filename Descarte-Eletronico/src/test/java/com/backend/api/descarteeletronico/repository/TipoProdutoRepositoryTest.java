@@ -1,7 +1,11 @@
 package com.backend.api.descarteeletronico.repository;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.backend.api.descarteeletronico.model.enums.EntityStatus;
 import com.backend.api.descarteeletronico.model.tipoproduto.TipoProduto;
+import java.util.Optional;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
@@ -14,11 +18,6 @@ import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
-
-import java.util.Optional;
-import java.util.Set;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 @DataJpaTest
 @Testcontainers(disabledWithoutDocker = true)
@@ -104,7 +103,8 @@ class TipoProdutoRepositoryTest {
 
     Set<TipoProduto> result =
         tipoProdutoRepository.findAllByIdInAndEntityStatus(
-            Set.of(active.getId(), savedInactive.getId(), savedDeleted.getId()), EntityStatus.ACTIVE);
+            Set.of(active.getId(), savedInactive.getId(), savedDeleted.getId()),
+            EntityStatus.ACTIVE);
 
     assertThat(result).extracting(TipoProduto::getNome).containsExactly("Computadores");
   }

@@ -17,12 +17,12 @@ import lombok.Setter;
 @AllArgsConstructor
 public class Usuario extends BaseEntity {
 
-    @Column(nullable = false, length = 100)
-    private String nome;
+  @Column(name = "nome", nullable = false, length = 100)
+  private String nome;
 
-    @Column(nullable = false, unique = true, length = 100)
-    private String email;
+  @Column(name = "email", nullable = false, length = 100)
+  private String email;
 
-    @Column(name = "senha", nullable = false, length = 255)
-    private String senha;
+  @Column(name = "senha", nullable = false, length = 255)
+  private String senha;
 }

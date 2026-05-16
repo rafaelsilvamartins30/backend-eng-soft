@@ -17,9 +17,9 @@ import com.backend.api.descarteeletronico.exception.BusinessException;
 import com.backend.api.descarteeletronico.exception.GlobalExceptionHandler;
 import com.backend.api.descarteeletronico.exception.ResourceNotFoundException;
 import com.backend.api.descarteeletronico.model.enums.EntityStatus;
-import com.backend.api.descarteeletronico.model.tipoproduto.dto.TipoProdutoRequest;
-import com.backend.api.descarteeletronico.model.tipoproduto.dto.TipoProdutoResponse;
-import com.backend.api.descarteeletronico.service.TipoProdutoService;
+import com.backend.api.descarteeletronico.model.usuario.dto.UsuarioRequest;
+import com.backend.api.descarteeletronico.model.usuario.dto.UsuarioResponse;
+import com.backend.api.descarteeletronico.service.UsuarioService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.Set;
 import java.util.UUID;
@@ -29,238 +29,236 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
-class TipoProdutoControllerTest {
+class UsuarioControllerTest {
 
   private MockMvc mockMvc;
   private ObjectMapper objectMapper;
-  private TipoProdutoService tipoProdutoService;
+  private UsuarioService usuarioService;
   private UUID id;
-  private TipoProdutoRequest request;
-  private TipoProdutoResponse response;
+  private UsuarioRequest request;
+  private UsuarioResponse response;
 
   @BeforeEach
   void setUp() {
-    tipoProdutoService = mock(TipoProdutoService.class);
+    usuarioService = mock(UsuarioService.class);
     mockMvc =
-        MockMvcBuilders.standaloneSetup(new TipoProdutoController(tipoProdutoService))
+        MockMvcBuilders.standaloneSetup(new UsuarioController(usuarioService))
             .setControllerAdvice(new GlobalExceptionHandler())
             .build();
     objectMapper = new ObjectMapper();
 
     id = UUID.randomUUID();
-    request = new TipoProdutoRequest("Computadores", "Notebooks, desktops e monitores");
+    request = new UsuarioRequest("Maria Silva", "maria@descarte.com", "SenhaForte123");
     response =
-        new TipoProdutoResponse(
-            id,
-            request.nome(),
-            request.descricaoExemplos(),
-            0L,
-            null,
-            null,
-            EntityStatus.ACTIVE,
-            null);
+        new UsuarioResponse(
+            id, request.nome(), request.email(), 0L, null, null, EntityStatus.ACTIVE, null);
   }
 
   @Test
   void createReturnsCreatedResponse() throws Exception {
-    when(tipoProdutoService.create(request)).thenReturn(response);
+    when(usuarioService.create(request)).thenReturn(response);
 
     mockMvc
         .perform(
-            post("/api/v1/tipos-produto")
+            post("/api/v1/usuarios")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
         .andExpect(status().isCreated())
         .andExpect(jsonPath("$.id").value(id.toString()))
-        .andExpect(jsonPath("$.nome").value(request.nome()));
+        .andExpect(jsonPath("$.nome").value(request.nome()))
+        .andExpect(jsonPath("$.email").value(request.email()))
+        .andExpect(jsonPath("$.senha").doesNotExist());
 
-    verify(tipoProdutoService).create(request);
-    verifyNoMoreInteractions(tipoProdutoService);
+    verify(usuarioService).create(request);
+    verifyNoMoreInteractions(usuarioService);
   }
 
   @Test
   void createReturnsBadRequestWhenPayloadIsInvalid() throws Exception {
-    TipoProdutoRequest invalidRequest = new TipoProdutoRequest("", "");
+    UsuarioRequest invalidRequest = new UsuarioRequest("", "email-invalido", "");
 
     mockMvc
         .perform(
-            post("/api/v1/tipos-produto")
+            post("/api/v1/usuarios")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(invalidRequest)))
         .andExpect(status().isBadRequest())
         .andExpect(jsonPath("$.message").value("Dados de entrada inválidos"));
 
-    verifyNoInteractions(tipoProdutoService);
+    verifyNoInteractions(usuarioService);
   }
 
   @Test
   void createReturnsBadRequestWhenPayloadIsTooLarge() throws Exception {
-    TipoProdutoRequest invalidRequest = new TipoProdutoRequest("A".repeat(101), "B".repeat(501));
+    UsuarioRequest invalidRequest =
+        new UsuarioRequest("A".repeat(101), "B".repeat(91) + "@email.com", "C".repeat(256));
 
     mockMvc
         .perform(
-            post("/api/v1/tipos-produto")
+            post("/api/v1/usuarios")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(invalidRequest)))
         .andExpect(status().isBadRequest())
         .andExpect(jsonPath("$.details").isArray());
 
-    verifyNoInteractions(tipoProdutoService);
+    verifyNoInteractions(usuarioService);
   }
 
   @Test
   void createReturnsBadRequestWhenServiceThrowsBusinessException() throws Exception {
-    when(tipoProdutoService.create(request)).thenThrow(new BusinessException("Regra inválida"));
+    when(usuarioService.create(request))
+        .thenThrow(new BusinessException("Já existe um usuário ativo cadastrado com este e-mail."));
 
     mockMvc
         .perform(
-            post("/api/v1/tipos-produto")
+            post("/api/v1/usuarios")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
         .andExpect(status().isBadRequest())
-        .andExpect(jsonPath("$.message").value("Regra inválida"))
-        .andExpect(jsonPath("$.path").value("/api/v1/tipos-produto"));
+        .andExpect(
+            jsonPath("$.message").value("Já existe um usuário ativo cadastrado com este e-mail."))
+        .andExpect(jsonPath("$.path").value("/api/v1/usuarios"));
 
-    verify(tipoProdutoService).create(request);
-    verifyNoMoreInteractions(tipoProdutoService);
+    verify(usuarioService).create(request);
+    verifyNoMoreInteractions(usuarioService);
   }
 
   @Test
   void findByIdReturnsOkResponse() throws Exception {
-    when(tipoProdutoService.findById(id)).thenReturn(response);
+    when(usuarioService.findById(id)).thenReturn(response);
 
     mockMvc
-        .perform(get("/api/v1/tipos-produto/{id}", id))
+        .perform(get("/api/v1/usuarios/{id}", id))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.id").value(id.toString()));
 
-    verify(tipoProdutoService).findById(id);
-    verifyNoMoreInteractions(tipoProdutoService);
+    verify(usuarioService).findById(id);
+    verifyNoMoreInteractions(usuarioService);
   }
 
   @Test
   void findByIdReturnsNotFoundWhenServiceThrows() throws Exception {
-    when(tipoProdutoService.findById(id))
-        .thenThrow(new ResourceNotFoundException("Tipo de produto não encontrado"));
+    when(usuarioService.findById(id))
+        .thenThrow(new ResourceNotFoundException("Usuário não encontrado"));
 
     mockMvc
-        .perform(get("/api/v1/tipos-produto/{id}", id))
+        .perform(get("/api/v1/usuarios/{id}", id))
         .andExpect(status().isNotFound())
-        .andExpect(jsonPath("$.message").value("Tipo de produto não encontrado"));
+        .andExpect(jsonPath("$.message").value("Usuário não encontrado"));
 
-    verify(tipoProdutoService).findById(id);
-    verifyNoMoreInteractions(tipoProdutoService);
+    verify(usuarioService).findById(id);
+    verifyNoMoreInteractions(usuarioService);
   }
 
   @Test
   void findAllReturnsOkResponse() throws Exception {
-    when(tipoProdutoService.findAll()).thenReturn(Set.of(response));
+    when(usuarioService.findAll()).thenReturn(Set.of(response));
 
     mockMvc
-        .perform(get("/api/v1/tipos-produto"))
+        .perform(get("/api/v1/usuarios"))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$[0].id").value(id.toString()));
 
-    verify(tipoProdutoService).findAll();
-    verifyNoMoreInteractions(tipoProdutoService);
+    verify(usuarioService).findAll();
+    verifyNoMoreInteractions(usuarioService);
   }
 
   @Test
   void findAllReturnsEmptyListWhenThereAreNoActiveEntities() throws Exception {
-    when(tipoProdutoService.findAll()).thenReturn(Set.of());
+    when(usuarioService.findAll()).thenReturn(Set.of());
 
     mockMvc
-        .perform(get("/api/v1/tipos-produto"))
+        .perform(get("/api/v1/usuarios"))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$").isArray())
         .andExpect(jsonPath("$").isEmpty());
 
-    verify(tipoProdutoService).findAll();
-    verifyNoMoreInteractions(tipoProdutoService);
+    verify(usuarioService).findAll();
+    verifyNoMoreInteractions(usuarioService);
   }
 
   @Test
   void findAllReturnsInternalServerErrorWhenServiceThrowsUnexpectedException() throws Exception {
-    when(tipoProdutoService.findAll()).thenThrow(new IllegalStateException("Falha inesperada"));
+    when(usuarioService.findAll()).thenThrow(new IllegalStateException("Falha inesperada"));
 
     mockMvc
-        .perform(get("/api/v1/tipos-produto"))
+        .perform(get("/api/v1/usuarios"))
         .andExpect(status().isInternalServerError())
         .andExpect(jsonPath("$.message").value("Erro interno inesperado"))
-        .andExpect(jsonPath("$.path").value("/api/v1/tipos-produto"));
+        .andExpect(jsonPath("$.path").value("/api/v1/usuarios"));
 
-    verify(tipoProdutoService).findAll();
-    verifyNoMoreInteractions(tipoProdutoService);
+    verify(usuarioService).findAll();
+    verifyNoMoreInteractions(usuarioService);
   }
 
   @Test
   void updateReturnsOkResponse() throws Exception {
-    when(tipoProdutoService.update(id, request)).thenReturn(response);
+    when(usuarioService.update(id, request)).thenReturn(response);
 
     mockMvc
         .perform(
-            put("/api/v1/tipos-produto/{id}", id)
+            put("/api/v1/usuarios/{id}", id)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.id").value(id.toString()));
 
-    verify(tipoProdutoService).update(id, request);
-    verifyNoMoreInteractions(tipoProdutoService);
+    verify(usuarioService).update(id, request);
+    verifyNoMoreInteractions(usuarioService);
   }
 
   @Test
   void updateReturnsBadRequestWhenPayloadIsInvalid() throws Exception {
-    TipoProdutoRequest invalidRequest = new TipoProdutoRequest("", "");
+    UsuarioRequest invalidRequest = new UsuarioRequest("", "email-invalido", "");
 
     mockMvc
         .perform(
-            put("/api/v1/tipos-produto/{id}", id)
+            put("/api/v1/usuarios/{id}", id)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(invalidRequest)))
         .andExpect(status().isBadRequest())
         .andExpect(jsonPath("$.message").value("Dados de entrada inválidos"));
 
-    verifyNoInteractions(tipoProdutoService);
+    verifyNoInteractions(usuarioService);
   }
 
   @Test
   void updateReturnsNotFoundWhenServiceThrows() throws Exception {
-    when(tipoProdutoService.update(id, request))
-        .thenThrow(new ResourceNotFoundException("Tipo de produto não encontrado"));
+    when(usuarioService.update(id, request))
+        .thenThrow(new ResourceNotFoundException("Usuário não encontrado"));
 
     mockMvc
         .perform(
-            put("/api/v1/tipos-produto/{id}", id)
+            put("/api/v1/usuarios/{id}", id)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
         .andExpect(status().isNotFound())
-        .andExpect(jsonPath("$.message").value("Tipo de produto não encontrado"));
+        .andExpect(jsonPath("$.message").value("Usuário não encontrado"));
 
-    verify(tipoProdutoService).update(id, request);
-    verifyNoMoreInteractions(tipoProdutoService);
+    verify(usuarioService).update(id, request);
+    verifyNoMoreInteractions(usuarioService);
   }
 
   @Test
   void deleteReturnsNoContent() throws Exception {
-    mockMvc.perform(delete("/api/v1/tipos-produto/{id}", id)).andExpect(status().isNoContent());
+    mockMvc.perform(delete("/api/v1/usuarios/{id}", id)).andExpect(status().isNoContent());
 
-    verify(tipoProdutoService).delete(id);
-    verifyNoMoreInteractions(tipoProdutoService);
+    verify(usuarioService).delete(id);
+    verifyNoMoreInteractions(usuarioService);
   }
 
   @Test
   void deleteReturnsNotFoundWhenServiceThrows() throws Exception {
-    doThrow(new ResourceNotFoundException("Tipo de produto não encontrado"))
-        .when(tipoProdutoService)
+    doThrow(new ResourceNotFoundException("Usuário não encontrado"))
+        .when(usuarioService)
         .delete(id);
 
     mockMvc
-        .perform(delete("/api/v1/tipos-produto/{id}", id))
+        .perform(delete("/api/v1/usuarios/{id}", id))
         .andExpect(status().isNotFound())
-        .andExpect(jsonPath("$.message").value("Tipo de produto não encontrado"));
+        .andExpect(jsonPath("$.message").value("Usuário não encontrado"));
 
-    verify(tipoProdutoService).delete(id);
-    verifyNoMoreInteractions(tipoProdutoService);
+    verify(usuarioService).delete(id);
+    verifyNoMoreInteractions(usuarioService);
   }
 }

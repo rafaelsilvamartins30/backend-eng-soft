@@ -1,5 +1,13 @@
 package com.backend.api.descarteeletronico.service;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
+
 import com.backend.api.descarteeletronico.exception.BusinessException;
 import com.backend.api.descarteeletronico.exception.ResourceNotFoundException;
 import com.backend.api.descarteeletronico.mapper.PontoColetaMapper;
@@ -10,25 +18,16 @@ import com.backend.api.descarteeletronico.model.pontocoleta.dto.PontoColetaRespo
 import com.backend.api.descarteeletronico.model.tipoproduto.TipoProduto;
 import com.backend.api.descarteeletronico.repository.PontoColetaRepository;
 import com.backend.api.descarteeletronico.repository.TipoProdutoRepository;
+import java.math.BigDecimal;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.math.BigDecimal;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class PontoColetaServiceTest {
@@ -244,8 +243,7 @@ class PontoColetaServiceTest {
   void findAllReturnsOnlyActiveEntitiesAndMapsResponses() {
     Set<PontoColeta> pontosColeta = Set.of(pontoColeta);
     Set<PontoColetaResponse> responses = Set.of(response);
-    when(pontoColetaRepository.findAllByEntityStatus(EntityStatus.ACTIVE))
-        .thenReturn(pontosColeta);
+    when(pontoColetaRepository.findAllByEntityStatus(EntityStatus.ACTIVE)).thenReturn(pontosColeta);
     when(pontoColetaMapper.toResponseSet(pontosColeta)).thenReturn(responses);
 
     Set<PontoColetaResponse> result = pontoColetaService.findAll();
@@ -261,8 +259,7 @@ class PontoColetaServiceTest {
   void findAllWithEmptyResultDelegatesToMapper() {
     Set<PontoColeta> pontosColeta = Set.of();
     Set<PontoColetaResponse> responses = Set.of();
-    when(pontoColetaRepository.findAllByEntityStatus(EntityStatus.ACTIVE))
-        .thenReturn(pontosColeta);
+    when(pontoColetaRepository.findAllByEntityStatus(EntityStatus.ACTIVE)).thenReturn(pontosColeta);
     when(pontoColetaMapper.toResponseSet(pontosColeta)).thenReturn(responses);
 
     Set<PontoColetaResponse> result = pontoColetaService.findAll();

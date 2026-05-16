@@ -1,8 +1,13 @@
 package com.backend.api.descarteeletronico.repository;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.backend.api.descarteeletronico.model.enums.EntityStatus;
 import com.backend.api.descarteeletronico.model.pontocoleta.PontoColeta;
 import com.backend.api.descarteeletronico.model.tipoproduto.TipoProduto;
+import java.math.BigDecimal;
+import java.util.Optional;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
@@ -15,12 +20,6 @@ import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
-
-import java.math.BigDecimal;
-import java.util.Optional;
-import java.util.Set;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 @DataJpaTest
 @Testcontainers(disabledWithoutDocker = true)
@@ -81,7 +80,9 @@ class PontoColetaRepositoryTest {
 
     assertThat(result).isPresent();
     assertThat(result.get().getNome()).isEqualTo("EcoPonto Centro");
-    assertThat(result.get().getTiposProduto()).extracting(TipoProduto::getNome).contains("Computadores");
+    assertThat(result.get().getTiposProduto())
+        .extracting(TipoProduto::getNome)
+        .contains("Computadores");
   }
 
   @Test
