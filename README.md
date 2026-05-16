@@ -157,6 +157,12 @@ Campos técnicos:
 
 Não use `entityStatus` para estado de negócio. Estados como `PENDING`, `APPROVED`, `FINISHED` ou `CANCELED` devem ficar em enums próprios da entidade.
 
+Regras específicas já adotadas no projeto:
+
+- `Feedback` e `Notificacao`: `ACTIVE` representa item ainda não visualizado pelo administrador e `INACTIVE` representa item já visualizado.
+- `PontoColeta`: `INACTIVE` representa ponto de coleta cheio no momento. Pontos `ACTIVE` são os disponíveis para listagem pública.
+- `DELETED` continua sendo usado apenas para remoção lógica.
+
 ## Soft Delete
 
 Remoção deve ser lógica.
@@ -167,6 +173,8 @@ No service concreto:
 - `delete` deve preencher `deletedAt`;
 - `findById` deve retornar apenas registros `ACTIVE`;
 - `findAll` deve retornar apenas registros `ACTIVE`.
+
+Para `Feedback` e `Notificacao`, listagens administrativas retornam `ACTIVE` e `INACTIVE`, excluindo apenas `DELETED`, porque `INACTIVE` significa visto. Para `PontoColeta`, listagens públicas retornam apenas `ACTIVE`, porque `INACTIVE` significa cheio.
 
 ## BaseMapper
 
@@ -270,11 +278,8 @@ Base path:
 
 Endpoints:
 
-- `POST /api/v1/usuarios`
-- `GET /api/v1/usuarios`
-- `GET /api/v1/usuarios/{id}`
-- `PUT /api/v1/usuarios/{id}`
-- `DELETE /api/v1/usuarios/{id}`
+- `GET /api/v1/usuarios/me`
+- `PATCH /api/v1/usuarios/me`
 
 Request:
 
@@ -303,20 +308,76 @@ Response:
 
 Regras:
 
-- `nome`, `email` e `senha` são obrigatórios.
+- A aplicação trabalha com um único usuário administrador inicializado pela própria aplicação.
+- As rotas de usuário são protegidas por `ADMIN`.
+- No update, ao menos um campo deve ser informado.
 - `nome` e `email` aceitam no máximo 100 caracteres.
-- `senha` aceita no máximo 255 caracteres.
+- `senha` deve ter entre 8 e 255 caracteres.
 - `email` deve ter formato válido.
-- Só pode existir um usuário `ACTIVE` por e-mail.
-- Usuários removidos usam soft delete (`entityStatus = DELETED` e `deletedAt` preenchido).
-- Listagem e busca por ID retornam apenas usuários `ACTIVE`.
 - A senha entra apenas no request; ela não é retornada nos DTOs de response.
 
 Testes:
 
-- `UsuarioServiceTest` cobre criação, atualização, soft delete, busca, listagem e regras de e-mail duplicado.
-- `UsuarioControllerTest` cobre respostas `2xx`, validação `400`, regra de negócio `400`, `404` e erro inesperado `500`.
+- `UsuarioServiceTest` cobre busca do admin atual, update parcial, senha codificada e erros.
+- `UsuarioControllerTest` cobre respostas `2xx`, validação `400`, regra de negócio `400` e `404`.
 - `UsuarioRepositoryTest` usa Testcontainers com PostgreSQL e Flyway para validar migration e queries filtradas por `EntityStatus.ACTIVE`.
+
+## Endpoints Públicos E Administrativos
+
+Rotas de leitura dos dados necessários para o público são abertas no próprio controller da entidade. Rotas de criação, atualização e remoção usam `@PreAuthorize("hasRole('ADMIN')")` no método.
+
+Tipos de produto:
+
+- Público: `GET /api/v1/tipos-produto`
+- Público: `GET /api/v1/tipos-produto/{id}`
+- Admin: `POST /api/v1/tipos-produto`
+- Admin: `PUT /api/v1/tipos-produto/{id}`
+- Admin: `DELETE /api/v1/tipos-produto/{id}`
+
+Pontos de coleta:
+
+- Público: `GET /api/v1/pontos-coleta`
+- Público: `GET /api/v1/pontos-coleta/{id}`
+- Público: `POST /api/v1/pontos-coleta/{id}/feedbacks`
+- Público: `POST /api/v1/pontos-coleta/{id}/notificacoes/cheio`
+- Admin: `POST /api/v1/pontos-coleta`
+- Admin: `PUT /api/v1/pontos-coleta/{id}`
+- Admin: `DELETE /api/v1/pontos-coleta/{id}`
+
+Regra de status de ponto de coleta:
+
+- `ACTIVE`: ponto disponível para listagem pública.
+- `INACTIVE`: ponto cheio no momento.
+- `DELETED`: ponto removido por soft delete.
+
+## Feedbacks E Notificações
+
+Feedback é o comentário enviado por uma pessoa sobre um ponto de coleta, contendo `nome`, `email` e `mensagem`. Ao criar um feedback, a aplicação cria também uma notificação administrativa do tipo `FEEDBACK_RECEBIDO`.
+
+Quando alguém reporta que um ponto de coleta está cheio, a aplicação cria uma notificação administrativa do tipo `PONTO_COLETA_CHEIO`.
+
+Gestão administrativa de feedbacks:
+
+- `GET /api/v1/feedbacks`
+- `GET /api/v1/feedbacks/nao-visualizados`
+- `GET /api/v1/feedbacks/{id}`
+- `PATCH /api/v1/feedbacks/{id}/visualizar`
+- `DELETE /api/v1/feedbacks/{id}`
+
+Gestão administrativa de notificações:
+
+- `GET /api/v1/notificacoes`
+- `GET /api/v1/notificacoes/nao-visualizadas`
+- `PATCH /api/v1/notificacoes/{id}/visualizar`
+- `DELETE /api/v1/notificacoes/{id}`
+
+Regras:
+
+- Esta regra de status é exclusiva de `Feedback` e `Notificacao`.
+- `ACTIVE`: feedback/notificação ainda não visualizado.
+- `INACTIVE`: feedback/notificação já visualizado.
+- `DELETED`: feedback/notificação removido por soft delete.
+- Marcar um feedback como visualizado também marca como visualizadas as notificações ativas ligadas a ele.
 
 Exemplo de body:
 

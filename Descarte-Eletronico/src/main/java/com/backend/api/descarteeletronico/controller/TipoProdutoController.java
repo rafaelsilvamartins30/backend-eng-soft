@@ -30,13 +30,12 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/v1/tipos-produto")
 @RequiredArgsConstructor
-@PreAuthorize("hasRole('ADMIN')")
 @Tag(name = "Tipos de Produto", description = "CRUD dos tipos de produto aceitos nos pontos")
 public class TipoProdutoController {
 
   private final TipoProdutoService tipoProdutoService;
 
-  @Operation(summary = "Cria um tipo de produto")
+  @Operation(summary = "Cria um tipo de produto administrativo protegido por role ADMIN")
   @ApiResponses({
     @ApiResponse(
         responseCode = "201",
@@ -51,13 +50,14 @@ public class TipoProdutoController {
         description = "Erro interno inesperado",
         content = @Content(schema = @Schema(implementation = ErrorResponseDTO.class)))
   })
+  @PreAuthorize("hasRole('ADMIN')")
   @PostMapping
   public ResponseEntity<TipoProdutoResponse> create(
       @Valid @RequestBody TipoProdutoRequest request) {
     return ResponseEntity.status(HttpStatus.CREATED).body(tipoProdutoService.create(request));
   }
 
-  @Operation(summary = "Busca um tipo de produto por ID")
+  @Operation(summary = "Busca pública de um tipo de produto por ID")
   @ApiResponses({
     @ApiResponse(
         responseCode = "200",
@@ -78,7 +78,7 @@ public class TipoProdutoController {
     return ResponseEntity.ok(tipoProdutoService.findById(id));
   }
 
-  @Operation(summary = "Lista tipos de produto ativos")
+  @Operation(summary = "Lista pública de tipos de produto ativos")
   @ApiResponses({
     @ApiResponse(
         responseCode = "200",
@@ -94,7 +94,7 @@ public class TipoProdutoController {
     return ResponseEntity.ok(tipoProdutoService.findAll());
   }
 
-  @Operation(summary = "Atualiza um tipo de produto")
+  @Operation(summary = "Atualiza um tipo de produto administrativo protegido por role ADMIN")
   @ApiResponses({
     @ApiResponse(
         responseCode = "200",
@@ -113,6 +113,7 @@ public class TipoProdutoController {
         description = "Erro interno inesperado",
         content = @Content(schema = @Schema(implementation = ErrorResponseDTO.class)))
   })
+  @PreAuthorize("hasRole('ADMIN')")
   @PutMapping("/{id}")
   public ResponseEntity<TipoProdutoResponse> update(
       @Parameter(description = "ID do tipo de produto") @PathVariable UUID id,
@@ -120,7 +121,7 @@ public class TipoProdutoController {
     return ResponseEntity.ok(tipoProdutoService.update(id, request));
   }
 
-  @Operation(summary = "Remove um tipo de produto com soft delete")
+  @Operation(summary = "Remove um tipo de produto administrativo protegido por role ADMIN")
   @ApiResponses({
     @ApiResponse(responseCode = "204", description = "Tipo de produto removido"),
     @ApiResponse(
@@ -132,6 +133,7 @@ public class TipoProdutoController {
         description = "Erro interno inesperado",
         content = @Content(schema = @Schema(implementation = ErrorResponseDTO.class)))
   })
+  @PreAuthorize("hasRole('ADMIN')")
   @DeleteMapping("/{id}")
   public ResponseEntity<Void> delete(
       @Parameter(description = "ID do tipo de produto") @PathVariable UUID id) {

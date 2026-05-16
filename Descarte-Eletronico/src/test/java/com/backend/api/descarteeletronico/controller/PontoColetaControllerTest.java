@@ -17,8 +17,14 @@ import com.backend.api.descarteeletronico.exception.BusinessException;
 import com.backend.api.descarteeletronico.exception.GlobalExceptionHandler;
 import com.backend.api.descarteeletronico.exception.ResourceNotFoundException;
 import com.backend.api.descarteeletronico.model.enums.EntityStatus;
+import com.backend.api.descarteeletronico.model.enums.NotificacaoTipo;
+import com.backend.api.descarteeletronico.model.feedback.dto.FeedbackRequest;
+import com.backend.api.descarteeletronico.model.feedback.dto.FeedbackResponse;
+import com.backend.api.descarteeletronico.model.notificacao.dto.NotificacaoResponse;
 import com.backend.api.descarteeletronico.model.pontocoleta.dto.PontoColetaRequest;
 import com.backend.api.descarteeletronico.model.pontocoleta.dto.PontoColetaResponse;
+import com.backend.api.descarteeletronico.service.FeedbackService;
+import com.backend.api.descarteeletronico.service.NotificacaoService;
 import com.backend.api.descarteeletronico.service.PontoColetaService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
@@ -35,6 +41,8 @@ class PontoColetaControllerTest {
   private MockMvc mockMvc;
   private ObjectMapper objectMapper;
   private PontoColetaService pontoColetaService;
+  private FeedbackService feedbackService;
+  private NotificacaoService notificacaoService;
   private UUID id;
   private UUID tipoProdutoId;
   private PontoColetaRequest request;
@@ -43,8 +51,11 @@ class PontoColetaControllerTest {
   @BeforeEach
   void setUp() {
     pontoColetaService = mock(PontoColetaService.class);
+    feedbackService = mock(FeedbackService.class);
+    notificacaoService = mock(NotificacaoService.class);
     mockMvc =
-        MockMvcBuilders.standaloneSetup(new PontoColetaController(pontoColetaService))
+        MockMvcBuilders.standaloneSetup(
+                new PontoColetaController(pontoColetaService, feedbackService, notificacaoService))
             .setControllerAdvice(new GlobalExceptionHandler())
             .build();
     objectMapper = new ObjectMapper();
@@ -90,6 +101,7 @@ class PontoColetaControllerTest {
 
     verify(pontoColetaService).create(request);
     verifyNoMoreInteractions(pontoColetaService);
+    verifyNoInteractions(feedbackService, notificacaoService);
   }
 
   @Test
@@ -106,6 +118,7 @@ class PontoColetaControllerTest {
         .andExpect(jsonPath("$.message").value("Dados de entrada inválidos"));
 
     verifyNoInteractions(pontoColetaService);
+    verifyNoInteractions(feedbackService, notificacaoService);
   }
 
   @Test
@@ -128,6 +141,7 @@ class PontoColetaControllerTest {
         .andExpect(jsonPath("$.details").isArray());
 
     verifyNoInteractions(pontoColetaService);
+    verifyNoInteractions(feedbackService, notificacaoService);
   }
 
   @Test
@@ -145,6 +159,7 @@ class PontoColetaControllerTest {
 
     verify(pontoColetaService).create(request);
     verifyNoMoreInteractions(pontoColetaService);
+    verifyNoInteractions(feedbackService, notificacaoService);
   }
 
   @Test
@@ -158,6 +173,7 @@ class PontoColetaControllerTest {
 
     verify(pontoColetaService).findById(id);
     verifyNoMoreInteractions(pontoColetaService);
+    verifyNoInteractions(feedbackService, notificacaoService);
   }
 
   @Test
@@ -172,6 +188,7 @@ class PontoColetaControllerTest {
 
     verify(pontoColetaService).findById(id);
     verifyNoMoreInteractions(pontoColetaService);
+    verifyNoInteractions(feedbackService, notificacaoService);
   }
 
   @Test
@@ -185,6 +202,7 @@ class PontoColetaControllerTest {
 
     verify(pontoColetaService).findAll();
     verifyNoMoreInteractions(pontoColetaService);
+    verifyNoInteractions(feedbackService, notificacaoService);
   }
 
   @Test
@@ -199,6 +217,7 @@ class PontoColetaControllerTest {
 
     verify(pontoColetaService).findAll();
     verifyNoMoreInteractions(pontoColetaService);
+    verifyNoInteractions(feedbackService, notificacaoService);
   }
 
   @Test
@@ -213,6 +232,7 @@ class PontoColetaControllerTest {
 
     verify(pontoColetaService).findAll();
     verifyNoMoreInteractions(pontoColetaService);
+    verifyNoInteractions(feedbackService, notificacaoService);
   }
 
   @Test
@@ -229,6 +249,7 @@ class PontoColetaControllerTest {
 
     verify(pontoColetaService).update(id, request);
     verifyNoMoreInteractions(pontoColetaService);
+    verifyNoInteractions(feedbackService, notificacaoService);
   }
 
   @Test
@@ -245,6 +266,7 @@ class PontoColetaControllerTest {
         .andExpect(jsonPath("$.message").value("Dados de entrada inválidos"));
 
     verifyNoInteractions(pontoColetaService);
+    verifyNoInteractions(feedbackService, notificacaoService);
   }
 
   @Test
@@ -262,6 +284,7 @@ class PontoColetaControllerTest {
 
     verify(pontoColetaService).update(id, request);
     verifyNoMoreInteractions(pontoColetaService);
+    verifyNoInteractions(feedbackService, notificacaoService);
   }
 
   @Test
@@ -278,6 +301,7 @@ class PontoColetaControllerTest {
 
     verify(pontoColetaService).update(id, request);
     verifyNoMoreInteractions(pontoColetaService);
+    verifyNoInteractions(feedbackService, notificacaoService);
   }
 
   @Test
@@ -286,6 +310,7 @@ class PontoColetaControllerTest {
 
     verify(pontoColetaService).delete(id);
     verifyNoMoreInteractions(pontoColetaService);
+    verifyNoInteractions(feedbackService, notificacaoService);
   }
 
   @Test
@@ -301,5 +326,84 @@ class PontoColetaControllerTest {
 
     verify(pontoColetaService).delete(id);
     verifyNoMoreInteractions(pontoColetaService);
+    verifyNoInteractions(feedbackService, notificacaoService);
+  }
+
+  @Test
+  void createFeedbackReturnsCreatedResponse() throws Exception {
+    FeedbackRequest feedbackRequest =
+        new FeedbackRequest("João Silva", "joao@email.com", "Ponto muito bem localizado.");
+    FeedbackResponse feedbackResponse =
+        new FeedbackResponse(
+            UUID.randomUUID(),
+            id,
+            response.nome(),
+            feedbackRequest.nome(),
+            feedbackRequest.email(),
+            feedbackRequest.mensagem(),
+            0L,
+            null,
+            null,
+            EntityStatus.ACTIVE,
+            null);
+    when(feedbackService.create(id, feedbackRequest)).thenReturn(feedbackResponse);
+
+    mockMvc
+        .perform(
+            post("/api/v1/pontos-coleta/{id}/feedbacks", id)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(feedbackRequest)))
+        .andExpect(status().isCreated())
+        .andExpect(jsonPath("$.pontoColetaId").value(id.toString()))
+        .andExpect(jsonPath("$.nome").value(feedbackRequest.nome()))
+        .andExpect(jsonPath("$.email").value(feedbackRequest.email()));
+
+    verify(feedbackService).create(id, feedbackRequest);
+    verifyNoMoreInteractions(feedbackService);
+    verifyNoInteractions(pontoColetaService, notificacaoService);
+  }
+
+  @Test
+  void createFeedbackReturnsBadRequestWhenPayloadIsInvalid() throws Exception {
+    FeedbackRequest feedbackRequest = new FeedbackRequest("", "email-invalido", "");
+
+    mockMvc
+        .perform(
+            post("/api/v1/pontos-coleta/{id}/feedbacks", id)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(feedbackRequest)))
+        .andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.message").value("Dados de entrada inválidos"));
+
+    verifyNoInteractions(pontoColetaService, feedbackService, notificacaoService);
+  }
+
+  @Test
+  void notifyFullReturnsCreatedResponse() throws Exception {
+    NotificacaoResponse notificacaoResponse =
+        new NotificacaoResponse(
+            UUID.randomUUID(),
+            NotificacaoTipo.PONTO_COLETA_CHEIO,
+            "Ponto de coleta cheio",
+            "O ponto de coleta EcoPonto Centro foi reportado como cheio.",
+            id,
+            response.nome(),
+            null,
+            0L,
+            null,
+            null,
+            EntityStatus.ACTIVE,
+            null);
+    when(notificacaoService.createPontoCheio(id)).thenReturn(notificacaoResponse);
+
+    mockMvc
+        .perform(post("/api/v1/pontos-coleta/{id}/notificacoes/cheio", id))
+        .andExpect(status().isCreated())
+        .andExpect(jsonPath("$.tipo").value(NotificacaoTipo.PONTO_COLETA_CHEIO.name()))
+        .andExpect(jsonPath("$.pontoColetaId").value(id.toString()));
+
+    verify(notificacaoService).createPontoCheio(id);
+    verifyNoMoreInteractions(notificacaoService);
+    verifyNoInteractions(pontoColetaService, feedbackService);
   }
 }

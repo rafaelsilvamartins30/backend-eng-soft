@@ -1,8 +1,13 @@
 package com.backend.api.descarteeletronico.controller;
 
 import com.backend.api.descarteeletronico.exception.ErrorResponseDTO;
+import com.backend.api.descarteeletronico.model.feedback.dto.FeedbackRequest;
+import com.backend.api.descarteeletronico.model.feedback.dto.FeedbackResponse;
+import com.backend.api.descarteeletronico.model.notificacao.dto.NotificacaoResponse;
 import com.backend.api.descarteeletronico.model.pontocoleta.dto.PontoColetaRequest;
 import com.backend.api.descarteeletronico.model.pontocoleta.dto.PontoColetaResponse;
+import com.backend.api.descarteeletronico.service.FeedbackService;
+import com.backend.api.descarteeletronico.service.NotificacaoService;
 import com.backend.api.descarteeletronico.service.PontoColetaService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -30,13 +35,14 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/v1/pontos-coleta")
 @RequiredArgsConstructor
-@PreAuthorize("hasRole('ADMIN')")
 @Tag(name = "Pontos de Coleta", description = "CRUD dos pontos de coleta de eletrônicos")
 public class PontoColetaController {
 
   private final PontoColetaService pontoColetaService;
+  private final FeedbackService feedbackService;
+  private final NotificacaoService notificacaoService;
 
-  @Operation(summary = "Cria um ponto de coleta")
+  @Operation(summary = "Cria um ponto de coleta administrativo protegido por role ADMIN")
   @ApiResponses({
     @ApiResponse(
         responseCode = "201",
@@ -51,13 +57,14 @@ public class PontoColetaController {
         description = "Erro interno inesperado",
         content = @Content(schema = @Schema(implementation = ErrorResponseDTO.class)))
   })
+  @PreAuthorize("hasRole('ADMIN')")
   @PostMapping
   public ResponseEntity<PontoColetaResponse> create(
       @Valid @RequestBody PontoColetaRequest request) {
     return ResponseEntity.status(HttpStatus.CREATED).body(pontoColetaService.create(request));
   }
 
-  @Operation(summary = "Busca um ponto de coleta por ID")
+  @Operation(summary = "Busca pública de um ponto de coleta por ID")
   @ApiResponses({
     @ApiResponse(
         responseCode = "200",
@@ -78,7 +85,7 @@ public class PontoColetaController {
     return ResponseEntity.ok(pontoColetaService.findById(id));
   }
 
-  @Operation(summary = "Lista pontos de coleta ativos")
+  @Operation(summary = "Lista pública de pontos de coleta ativos")
   @ApiResponses({
     @ApiResponse(
         responseCode = "200",
@@ -94,7 +101,7 @@ public class PontoColetaController {
     return ResponseEntity.ok(pontoColetaService.findAll());
   }
 
-  @Operation(summary = "Atualiza um ponto de coleta")
+  @Operation(summary = "Atualiza um ponto de coleta administrativo protegido por role ADMIN")
   @ApiResponses({
     @ApiResponse(
         responseCode = "200",
@@ -113,6 +120,7 @@ public class PontoColetaController {
         description = "Erro interno inesperado",
         content = @Content(schema = @Schema(implementation = ErrorResponseDTO.class)))
   })
+  @PreAuthorize("hasRole('ADMIN')")
   @PutMapping("/{id}")
   public ResponseEntity<PontoColetaResponse> update(
       @Parameter(description = "ID do ponto de coleta") @PathVariable UUID id,
@@ -120,7 +128,7 @@ public class PontoColetaController {
     return ResponseEntity.ok(pontoColetaService.update(id, request));
   }
 
-  @Operation(summary = "Remove um ponto de coleta com soft delete")
+  @Operation(summary = "Remove um ponto de coleta administrativo protegido por role ADMIN")
   @ApiResponses({
     @ApiResponse(responseCode = "204", description = "Ponto de coleta removido"),
     @ApiResponse(
@@ -132,10 +140,58 @@ public class PontoColetaController {
         description = "Erro interno inesperado",
         content = @Content(schema = @Schema(implementation = ErrorResponseDTO.class)))
   })
+  @PreAuthorize("hasRole('ADMIN')")
   @DeleteMapping("/{id}")
   public ResponseEntity<Void> delete(
       @Parameter(description = "ID do ponto de coleta") @PathVariable UUID id) {
     pontoColetaService.delete(id);
     return ResponseEntity.noContent().build();
+  }
+
+  @Operation(summary = "Envia feedback público para um ponto de coleta")
+  @ApiResponses({
+    @ApiResponse(
+        responseCode = "201",
+        description = "Feedback criado",
+        content = @Content(schema = @Schema(implementation = FeedbackResponse.class))),
+    @ApiResponse(
+        responseCode = "400",
+        description = "Dados inválidos",
+        content = @Content(schema = @Schema(implementation = ErrorResponseDTO.class))),
+    @ApiResponse(
+        responseCode = "404",
+        description = "Ponto de coleta não encontrado",
+        content = @Content(schema = @Schema(implementation = ErrorResponseDTO.class))),
+    @ApiResponse(
+        responseCode = "500",
+        description = "Erro interno inesperado",
+        content = @Content(schema = @Schema(implementation = ErrorResponseDTO.class)))
+  })
+  @PostMapping("/{id}/feedbacks")
+  public ResponseEntity<FeedbackResponse> createFeedback(
+      @Parameter(description = "ID do ponto de coleta") @PathVariable UUID id,
+      @Valid @RequestBody FeedbackRequest request) {
+    return ResponseEntity.status(HttpStatus.CREATED).body(feedbackService.create(id, request));
+  }
+
+  @Operation(summary = "Notifica publicamente que um ponto de coleta está cheio")
+  @ApiResponses({
+    @ApiResponse(
+        responseCode = "201",
+        description = "Notificação criada",
+        content = @Content(schema = @Schema(implementation = NotificacaoResponse.class))),
+    @ApiResponse(
+        responseCode = "404",
+        description = "Ponto de coleta não encontrado",
+        content = @Content(schema = @Schema(implementation = ErrorResponseDTO.class))),
+    @ApiResponse(
+        responseCode = "500",
+        description = "Erro interno inesperado",
+        content = @Content(schema = @Schema(implementation = ErrorResponseDTO.class)))
+  })
+  @PostMapping("/{id}/notificacoes/cheio")
+  public ResponseEntity<NotificacaoResponse> notifyFull(
+      @Parameter(description = "ID do ponto de coleta") @PathVariable UUID id) {
+    return ResponseEntity.status(HttpStatus.CREATED).body(notificacaoService.createPontoCheio(id));
   }
 }
