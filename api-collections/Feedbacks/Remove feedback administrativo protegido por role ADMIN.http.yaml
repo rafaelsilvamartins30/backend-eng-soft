@@ -1,0 +1,7 @@
+method: delete
+url: /api/v1/feedbacks/{id}
+name: Remove feedback administrativo protegido por role ADMIN
+parameters:
+  path:
+    - name: id
+      value: ""

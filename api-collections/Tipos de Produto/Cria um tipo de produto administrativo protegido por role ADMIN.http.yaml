@@ -1,0 +1,10 @@
+method: post
+url: /api/v1/tipos-produto
+name: Cria um tipo de produto administrativo protegido por role ADMIN
+requestBody:
+  type: application/json
+  data: |-
+    {
+      "nome": "Computadores",
+      "descricaoExemplos": "Notebooks, desktops, monitores e periféricos"
+    }

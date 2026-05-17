@@ -1,0 +1,3 @@
+method: get
+url: /api/v1/feedbacks/nao-visualizados
+name: Lista feedbacks não vistos administrativos protegidos por role ADMIN

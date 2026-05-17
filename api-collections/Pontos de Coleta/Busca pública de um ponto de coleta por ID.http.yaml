@@ -1,0 +1,7 @@
+method: get
+url: /api/v1/pontos-coleta/{id}
+name: Busca pública de um ponto de coleta por ID
+parameters:
+  path:
+    - name: id
+      value: ""

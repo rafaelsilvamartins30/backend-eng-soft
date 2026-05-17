@@ -1,0 +1,7 @@
+method: delete
+url: /api/v1/tipos-produto/{id}
+name: Remove um tipo de produto administrativo protegido por role ADMIN
+parameters:
+  path:
+    - name: id
+      value: ""

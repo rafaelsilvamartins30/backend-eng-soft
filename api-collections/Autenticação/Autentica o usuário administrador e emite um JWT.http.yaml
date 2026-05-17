@@ -1,0 +1,10 @@
+method: post
+url: /api/v1/auth/login
+name: Autentica o usuário administrador e emite um JWT
+requestBody:
+  type: application/json
+  data: |-
+    {
+      "email": "admin@descarte.local",
+      "senha": "Admin@123"
+    }

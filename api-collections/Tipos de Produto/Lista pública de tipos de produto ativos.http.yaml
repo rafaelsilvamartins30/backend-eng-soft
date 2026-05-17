@@ -1,0 +1,3 @@
+method: get
+url: /api/v1/tipos-produto
+name: Lista pública de tipos de produto ativos
