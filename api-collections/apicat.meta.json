@@ -1,0 +1,7 @@
+{
+  "version": "1",
+  "name": "api-collections",
+  "description": "API backend para gerenciamento do projeto de descarte eletrônico.",
+  "type": "collection",
+  "ignore": []
+}

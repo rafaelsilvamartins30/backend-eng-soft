@@ -1,0 +1,7 @@
+method: get
+url: /api/v1/feedbacks/{id}
+name: Busca feedback administrativo protegido por role ADMIN
+parameters:
+  path:
+    - name: id
+      value: ""

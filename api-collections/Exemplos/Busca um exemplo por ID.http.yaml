@@ -1,0 +1,7 @@
+method: get
+url: /api/v1/exemplos/{id}
+name: Busca um exemplo por ID
+parameters:
+  path:
+    - name: id
+      value: ""

@@ -1,0 +1,7 @@
+method: delete
+url: /api/v1/exemplos/{id}
+name: Remove um exemplo com soft delete
+parameters:
+  path:
+    - name: id
+      value: ""

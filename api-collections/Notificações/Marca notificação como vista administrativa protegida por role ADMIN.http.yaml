@@ -1,0 +1,7 @@
+method: patch
+url: /api/v1/notificacoes/{id}/visualizar
+name: Marca notificação como vista administrativa protegida por role ADMIN
+parameters:
+  path:
+    - name: id
+      value: ""

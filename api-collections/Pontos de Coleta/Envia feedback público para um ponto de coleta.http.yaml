@@ -1,0 +1,15 @@
+method: post
+url: /api/v1/pontos-coleta/{id}/feedbacks
+name: Envia feedback público para um ponto de coleta
+parameters:
+  path:
+    - name: id
+      value: ""
+requestBody:
+  type: application/json
+  data: |-
+    {
+      "nome": "Maria Silva",
+      "email": "maria@email.com",
+      "mensagem": "O atendimento foi muito bom."
+    }
