@@ -10,7 +10,9 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -46,6 +48,8 @@ public class GlobalExceptionHandler {
   @ExceptionHandler(Exception.class)
   public ResponseEntity<ErrorResponseDTO> handleUnexpectedException(
       Exception exception, HttpServletRequest request) {
+
+    log.error("Erro interno capturado na rota {}: ", request.getRequestURI(), exception);
     return buildResponse(
         HttpStatus.INTERNAL_SERVER_ERROR, "Erro interno inesperado", request, Set.of());
   }

@@ -6,11 +6,13 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.EntityGraph;
 
 public interface UsuarioRepository extends JpaRepository<Usuario, UUID> {
 
   Optional<Usuario> findByIdAndEntityStatus(UUID id, EntityStatus entityStatus);
 
+  @EntityGraph(attributePaths = "roles")
   Optional<Usuario> findByEmailAndEntityStatus(String email, EntityStatus entityStatus);
 
   Set<Usuario> findAllByEntityStatus(EntityStatus entityStatus);
