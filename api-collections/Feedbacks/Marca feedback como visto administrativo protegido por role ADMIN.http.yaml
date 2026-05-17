@@ -1,0 +1,7 @@
+method: patch
+url: /api/v1/feedbacks/{id}/visualizar
+name: Marca feedback como visto administrativo protegido por role ADMIN
+parameters:
+  path:
+    - name: id
+      value: ""

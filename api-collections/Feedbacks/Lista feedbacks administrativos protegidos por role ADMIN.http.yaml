@@ -1,0 +1,3 @@
+method: get
+url: /api/v1/feedbacks
+name: Lista feedbacks administrativos protegidos por role ADMIN

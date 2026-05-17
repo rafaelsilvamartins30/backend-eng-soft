@@ -1,0 +1,20 @@
+method: put
+url: /api/v1/pontos-coleta/{id}
+name: Atualiza um ponto de coleta administrativo protegido por role ADMIN
+parameters:
+  path:
+    - name: id
+      value: ""
+requestBody:
+  type: application/json
+  data: |-
+    {
+      "nome": "EcoPonto Centro",
+      "endereco": "Rua das Flores, 123",
+      "descricao": "Recebe eletrônicos de pequeno porte",
+      "latitude": "-23.5505200",
+      "longitude": "-46.6333080",
+      "tipoProdutoIds": [
+        "string"
+      ]
+    }

@@ -1,0 +1,7 @@
+method: get
+url: /api/v1/tipos-produto/{id}
+name: Busca pública de um tipo de produto por ID
+parameters:
+  path:
+    - name: id
+      value: ""

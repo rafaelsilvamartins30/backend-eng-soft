@@ -1,0 +1,14 @@
+method: put
+url: /api/v1/tipos-produto/{id}
+name: Atualiza um tipo de produto administrativo protegido por role ADMIN
+parameters:
+  path:
+    - name: id
+      value: ""
+requestBody:
+  type: application/json
+  data: |-
+    {
+      "nome": "Computadores",
+      "descricaoExemplos": "Notebooks, desktops, monitores e periféricos"
+    }

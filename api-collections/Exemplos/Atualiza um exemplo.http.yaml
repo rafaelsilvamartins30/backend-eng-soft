@@ -1,0 +1,14 @@
+method: put
+url: /api/v1/exemplos/{id}
+name: Atualiza um exemplo
+parameters:
+  path:
+    - name: id
+      value: ""
+requestBody:
+  type: application/json
+  data: |-
+    {
+      "nome": "Coleta de notebook",
+      "descricao": "Equipamento antigo para descarte"
+    }

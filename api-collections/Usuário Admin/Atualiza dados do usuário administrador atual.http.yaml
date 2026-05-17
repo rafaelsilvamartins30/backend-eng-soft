@@ -1,0 +1,11 @@
+method: patch
+url: /api/v1/usuarios/me
+name: Atualiza dados do usuário administrador atual
+requestBody:
+  type: application/json
+  data: |-
+    {
+      "nome": "Administrador",
+      "email": "admin@descarte.local",
+      "senha": "Admin@456"
+    }

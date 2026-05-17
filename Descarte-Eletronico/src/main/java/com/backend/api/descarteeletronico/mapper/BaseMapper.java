@@ -1,8 +1,7 @@
 package com.backend.api.descarteeletronico.mapper;
 
-import org.mapstruct.MappingTarget;
-
 import java.util.Set;
+import org.mapstruct.MappingTarget;
 
 /** Contrato base para mappers MapStruct. */
 public interface BaseMapper<ENTITY, REQUEST, RESPONSE> {

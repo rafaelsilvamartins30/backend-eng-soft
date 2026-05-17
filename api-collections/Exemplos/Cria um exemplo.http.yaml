@@ -1,0 +1,10 @@
+method: post
+url: /api/v1/exemplos
+name: Cria um exemplo
+requestBody:
+  type: application/json
+  data: |-
+    {
+      "nome": "Coleta de notebook",
+      "descricao": "Equipamento antigo para descarte"
+    }

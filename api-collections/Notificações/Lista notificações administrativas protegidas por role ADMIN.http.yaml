@@ -1,0 +1,3 @@
+method: get
+url: /api/v1/notificacoes
+name: Lista notificações administrativas protegidas por role ADMIN

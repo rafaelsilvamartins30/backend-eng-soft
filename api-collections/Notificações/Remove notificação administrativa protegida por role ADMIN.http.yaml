@@ -1,0 +1,7 @@
+method: delete
+url: /api/v1/notificacoes/{id}
+name: Remove notificação administrativa protegida por role ADMIN
+parameters:
+  path:
+    - name: id
+      value: ""

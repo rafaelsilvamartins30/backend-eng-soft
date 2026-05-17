@@ -1,0 +1,7 @@
+method: post
+url: /api/v1/pontos-coleta/{id}/notificacoes/cheio
+name: Notifica publicamente que um ponto de coleta está cheio
+parameters:
+  path:
+    - name: id
+      value: ""

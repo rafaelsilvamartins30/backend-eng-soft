@@ -1,0 +1,3 @@
+method: get
+url: /api/v1/pontos-coleta
+name: Lista pública de pontos de coleta ativos

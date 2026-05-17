@@ -1,7 +1,6 @@
 package com.backend.api.descarteeletronico.exception;
 
 import io.swagger.v3.oas.annotations.media.Schema;
-
 import java.time.LocalDateTime;
 import java.util.Set;
 
@@ -13,7 +12,7 @@ public record ErrorResponseDTO(
     @Schema(description = "Descrição do status HTTP", example = "Bad Request") String error,
     @Schema(description = "Mensagem principal do erro", example = "Dados de entrada inválidos")
         String message,
-    @Schema(description = "Caminho da requisição", example = "/api/exemplos") String path,
+    @Schema(description = "Caminho da requisição", example = "/api/v1/exemplos") String path,
     @Schema(
             description = "Detalhes adicionais do erro",
             example = "[\"nome: O nome é obrigatório\"]")

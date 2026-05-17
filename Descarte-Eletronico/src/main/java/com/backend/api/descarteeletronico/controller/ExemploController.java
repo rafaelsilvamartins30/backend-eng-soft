@@ -13,9 +13,12 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import java.util.Set;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -25,11 +28,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.Set;
-import java.util.UUID;
-
 @RestController
-@RequestMapping("/api/exemplos")
+@RequestMapping("/api/v1/exemplos")
 @RequiredArgsConstructor
 @Tag(name = "Exemplos", description = "CRUD de referência para novas entidades")
 public class ExemploController {
@@ -60,7 +60,7 @@ public class ExemploController {
                                       "status": 400,
                                       "error": "Bad Request",
                                       "message": "Dados de entrada inválidos",
-                                      "path": "/api/exemplos",
+                                      "path": "/api/v1/exemplos",
                                       "details": ["nome: O nome é obrigatório"]
                                     }
                                     """))),
@@ -69,6 +69,7 @@ public class ExemploController {
         description = "Erro interno inesperado",
         content = @Content(schema = @Schema(implementation = ErrorResponseDTO.class)))
   })
+  @PreAuthorize("hasRole('ADMIN')")
   @PostMapping
   public ResponseEntity<ExemploResponse> create(@Valid @RequestBody ExemploRequest request) {
     return ResponseEntity.status(HttpStatus.CREATED).body(exemploService.create(request));
@@ -95,7 +96,7 @@ public class ExemploController {
                                       "status": 404,
                                       "error": "Not Found",
                                       "message": "Exemplo não encontrado",
-                                      "path": "/api/exemplos/4fbb2c8e-8737-4e24-9ef0-0db72a231ce8",
+                                      "path": "/api/v1/exemplos/4fbb2c8e-8737-4e24-9ef0-0db72a231ce8",
                                       "details": []
                                     }
                                     """))),
@@ -145,6 +146,7 @@ public class ExemploController {
         description = "Erro interno inesperado",
         content = @Content(schema = @Schema(implementation = ErrorResponseDTO.class)))
   })
+  @PreAuthorize("hasRole('ADMIN')")
   @PutMapping("/{id}")
   public ResponseEntity<ExemploResponse> update(
       @Parameter(description = "ID do exemplo") @PathVariable UUID id,
@@ -164,6 +166,7 @@ public class ExemploController {
         description = "Erro interno inesperado",
         content = @Content(schema = @Schema(implementation = ErrorResponseDTO.class)))
   })
+  @PreAuthorize("hasRole('ADMIN')")
   @DeleteMapping("/{id}")
   public ResponseEntity<Void> delete(
       @Parameter(description = "ID do exemplo") @PathVariable UUID id) {

@@ -1,0 +1,7 @@
+method: delete
+url: /api/v1/pontos-coleta/{id}
+name: Remove um ponto de coleta administrativo protegido por role ADMIN
+parameters:
+  path:
+    - name: id
+      value: ""
