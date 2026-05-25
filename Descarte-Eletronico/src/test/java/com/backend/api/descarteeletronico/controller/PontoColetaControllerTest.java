@@ -28,8 +28,11 @@ import com.backend.api.descarteeletronico.service.NotificacaoService;
 import com.backend.api.descarteeletronico.service.PontoColetaService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
+import java.time.LocalTime;
 import java.util.Set;
 import java.util.UUID;
+
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
@@ -59,6 +62,7 @@ class PontoColetaControllerTest {
             .setControllerAdvice(new GlobalExceptionHandler())
             .build();
     objectMapper = new ObjectMapper();
+    objectMapper.registerModule(new JavaTimeModule());
 
     id = UUID.randomUUID();
     tipoProdutoId = UUID.randomUUID();
@@ -69,6 +73,8 @@ class PontoColetaControllerTest {
             "Recebe eletrônicos de pequeno porte",
             new BigDecimal("-23.5505200"),
             new BigDecimal("-46.6333080"),
+            LocalTime.of(8, 0),
+            LocalTime.of(18, 0),
             Set.of(tipoProdutoId));
     response =
         new PontoColetaResponse(
@@ -78,6 +84,10 @@ class PontoColetaControllerTest {
             request.descricao(),
             request.latitude(),
             request.longitude(),
+            request.horarioAbertura(),
+            request.horarioFechamento(),
+            true,
+            "08:00 às 18:00",
             Set.of(),
             0L,
             null,
@@ -107,7 +117,7 @@ class PontoColetaControllerTest {
   @Test
   void createReturnsBadRequestWhenPayloadIsInvalid() throws Exception {
     PontoColetaRequest invalidRequest =
-        new PontoColetaRequest("", "", "", new BigDecimal("-91"), new BigDecimal("-181"), Set.of());
+        new PontoColetaRequest("", "", "", new BigDecimal("-91"), new BigDecimal("-181"), null, null, Set.of());
 
     mockMvc
         .perform(
@@ -130,6 +140,8 @@ class PontoColetaControllerTest {
             "C".repeat(501),
             BigDecimal.ZERO,
             BigDecimal.ZERO,
+            LocalTime.of(8, 0),
+            LocalTime.of(18, 0),
             Set.of(tipoProdutoId));
 
     mockMvc
@@ -255,7 +267,7 @@ class PontoColetaControllerTest {
   @Test
   void updateReturnsBadRequestWhenPayloadIsInvalid() throws Exception {
     PontoColetaRequest invalidRequest =
-        new PontoColetaRequest("", "", "", new BigDecimal("91"), new BigDecimal("181"), Set.of());
+        new PontoColetaRequest("", "", "", new BigDecimal("91"), new BigDecimal("181"), null, null, Set.of());
 
     mockMvc
         .perform(

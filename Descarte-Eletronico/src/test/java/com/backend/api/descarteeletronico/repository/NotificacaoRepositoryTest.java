@@ -8,6 +8,7 @@ import com.backend.api.descarteeletronico.model.feedback.Feedback;
 import com.backend.api.descarteeletronico.model.notificacao.Notificacao;
 import com.backend.api.descarteeletronico.model.pontocoleta.PontoColeta;
 import java.math.BigDecimal;
+import java.time.LocalTime;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -125,6 +126,8 @@ class NotificacaoRepositoryTest {
             "Recebe eletrônicos",
             new BigDecimal("-23.5505200"),
             new BigDecimal("-46.6333080"),
+            LocalTime.of(8, 0),
+            LocalTime.of(18, 0),
             Set.of()));
   }
 }
