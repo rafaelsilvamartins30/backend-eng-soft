@@ -58,8 +58,11 @@ public class SecurityBeansConfiguration {
                     .permitAll()
                     .requestMatchers(
                         HttpMethod.GET,
+                        "/api/v1/exemplos",
                         "/api/v1/exemplos/**",
+                        "/api/v1/pontos-coleta",
                         "/api/v1/pontos-coleta/**",
+                        "/api/v1/tipos-produto",
                         "/api/v1/tipos-produto/**")
                     .permitAll()
                     .requestMatchers(
