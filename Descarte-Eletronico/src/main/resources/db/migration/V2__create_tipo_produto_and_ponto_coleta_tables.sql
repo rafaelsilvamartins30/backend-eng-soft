@@ -29,12 +29,14 @@ CREATE TABLE IF NOT EXISTS ponto_coleta (
     descricao VARCHAR(500) NOT NULL,
     latitude NUMERIC(10, 7) NOT NULL,
     longitude NUMERIC(10, 7) NOT NULL,
+    horario_abertura TIME NOT NULL,  -- Nova coluna
+    horario_fechamento TIME NOT NULL, -- Nova coluna
     CONSTRAINT ck_ponto_coleta_entity_status
-        CHECK (entity_status IN ('ACTIVE', 'INACTIVE', 'DELETED')),
+    CHECK (entity_status IN ('ACTIVE', 'INACTIVE', 'DELETED')),
     CONSTRAINT ck_ponto_coleta_latitude
-        CHECK (latitude >= -90 AND latitude <= 90),
+    CHECK (latitude >= -90 AND latitude <= 90),
     CONSTRAINT ck_ponto_coleta_longitude
-        CHECK (longitude >= -180 AND longitude <= 180)
+    CHECK (longitude >= -180 AND longitude <= 180)
 );
 
 CREATE INDEX IF NOT EXISTS idx_ponto_coleta_entity_status

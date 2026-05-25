@@ -6,6 +6,7 @@ import com.backend.api.descarteeletronico.model.enums.EntityStatus;
 import com.backend.api.descarteeletronico.model.pontocoleta.PontoColeta;
 import com.backend.api.descarteeletronico.model.tipoproduto.TipoProduto;
 import java.math.BigDecimal;
+import java.time.LocalTime;
 import java.util.Optional;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
@@ -73,6 +74,8 @@ class PontoColetaRepositoryTest {
                 "Recebe eletrônicos de pequeno porte",
                 new BigDecimal("-23.5505200"),
                 new BigDecimal("-46.6333080"),
+                LocalTime.of(8, 0),
+                LocalTime.of(18, 0),
                 Set.of(tipoProduto)));
 
     Optional<PontoColeta> result =
@@ -94,6 +97,8 @@ class PontoColetaRepositoryTest {
             "Recebe eletrônicos de pequeno porte",
             new BigDecimal("-23.5505200"),
             new BigDecimal("-46.6333080"),
+            LocalTime.of(8, 0),
+            LocalTime.of(18, 0),
             Set.of());
     pontoColeta.setEntityStatus(EntityStatus.DELETED);
     PontoColeta saved = pontoColetaRepository.saveAndFlush(pontoColeta);
@@ -113,6 +118,8 @@ class PontoColetaRepositoryTest {
             "Recebe eletrônicos de pequeno porte",
             new BigDecimal("-23.5505200"),
             new BigDecimal("-46.6333080"),
+            LocalTime.of(8, 0),
+            LocalTime.of(18, 0),
             Set.of());
     pontoColeta.setEntityStatus(EntityStatus.INACTIVE);
     PontoColeta saved = pontoColetaRepository.saveAndFlush(pontoColeta);
@@ -132,6 +139,8 @@ class PontoColetaRepositoryTest {
             "Recebe eletrônicos de pequeno porte",
             new BigDecimal("-23.5505200"),
             new BigDecimal("-46.6333080"),
+            LocalTime.of(8, 0),
+            LocalTime.of(18, 0),
             Set.of());
     PontoColeta deleted =
         new PontoColeta(
@@ -140,6 +149,8 @@ class PontoColetaRepositoryTest {
             "Recebe eletrônicos variados",
             new BigDecimal("-22.9000000"),
             new BigDecimal("-43.2000000"),
+            LocalTime.of(8, 0),
+            LocalTime.of(18, 0),
             Set.of());
     deleted.setEntityStatus(EntityStatus.DELETED);
     PontoColeta inactive =
@@ -149,6 +160,8 @@ class PontoColetaRepositoryTest {
             "Temporariamente indisponível",
             new BigDecimal("-23.5600000"),
             new BigDecimal("-46.6500000"),
+            LocalTime.of(8, 0),
+            LocalTime.of(18, 0),
             Set.of());
     inactive.setEntityStatus(EntityStatus.INACTIVE);
     pontoColetaRepository.saveAllAndFlush(Set.of(active, deleted, inactive));

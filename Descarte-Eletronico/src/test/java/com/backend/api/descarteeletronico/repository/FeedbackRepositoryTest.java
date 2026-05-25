@@ -6,6 +6,7 @@ import com.backend.api.descarteeletronico.model.enums.EntityStatus;
 import com.backend.api.descarteeletronico.model.feedback.Feedback;
 import com.backend.api.descarteeletronico.model.pontocoleta.PontoColeta;
 import java.math.BigDecimal;
+import java.time.LocalTime;
 import java.util.Optional;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
@@ -96,6 +97,8 @@ class FeedbackRepositoryTest {
                 "Recebe eletrônicos",
                 new BigDecimal("-23.5505200"),
                 new BigDecimal("-46.6333080"),
+                LocalTime.of(8, 0),
+                LocalTime.of(18, 0),
                 Set.of()));
     Feedback feedback =
         new Feedback(pontoColeta, "Maria Silva", "maria@email.com", "Feedback de teste");

@@ -18,6 +18,7 @@ import com.backend.api.descarteeletronico.model.pontocoleta.PontoColeta;
 import com.backend.api.descarteeletronico.repository.FeedbackRepository;
 import com.backend.api.descarteeletronico.repository.PontoColetaRepository;
 import java.math.BigDecimal;
+import java.time.LocalTime;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -59,6 +60,8 @@ class FeedbackServiceTest {
             "Recebe eletrônicos",
             new BigDecimal("-23.5505200"),
             new BigDecimal("-46.6333080"),
+            LocalTime.of(8, 0),
+            LocalTime.of(18, 0),
             Set.of());
     request = new FeedbackRequest("Maria Silva", "maria@email.com", "Muito bom.");
     feedback = new Feedback(pontoColeta, request.nome(), request.email(), request.mensagem());
