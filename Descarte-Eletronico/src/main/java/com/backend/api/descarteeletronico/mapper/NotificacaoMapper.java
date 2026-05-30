@@ -10,7 +10,7 @@ public interface NotificacaoMapper {
 
   @Mapping(target = "pontoColetaId", source = "pontoColeta.id")
   @Mapping(target = "pontoColetaNome", source = "pontoColeta.nome")
-  @Mapping(target = "feedbackId", source = "feedback.id")
+  @Mapping(target = "relatoProblemaId", source = "relatoProblema.id")
   NotificacaoResponse toResponse(Notificacao notificacao);
 
   java.util.Set<NotificacaoResponse> toResponseSet(java.util.Set<Notificacao> notificacoes);

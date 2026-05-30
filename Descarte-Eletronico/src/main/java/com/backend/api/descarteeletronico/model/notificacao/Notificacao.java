@@ -1,13 +1,10 @@
 package com.backend.api.descarteeletronico.model.notificacao;
 
 import com.backend.api.descarteeletronico.model.entity.BaseEntity;
-import com.backend.api.descarteeletronico.model.enums.NotificacaoTipo;
-import com.backend.api.descarteeletronico.model.feedback.Feedback;
+import com.backend.api.descarteeletronico.model.relato.RelatoProblema;
 import com.backend.api.descarteeletronico.model.pontocoleta.PontoColeta;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
@@ -25,21 +22,17 @@ import lombok.Setter;
 @AllArgsConstructor
 public class Notificacao extends BaseEntity {
 
-  @Enumerated(EnumType.STRING)
-  @Column(name = "tipo", nullable = false, length = 50)
-  private NotificacaoTipo tipo;
-
   @Column(name = "titulo", nullable = false, length = 150)
   private String titulo;
 
   @Column(name = "mensagem", nullable = false, length = 500)
   private String mensagem;
 
-  @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "ponto_coleta_id")
+  @ManyToOne(fetch = FetchType.LAZY, optional = false)
+  @JoinColumn(name = "ponto_coleta_id", nullable = false)
   private PontoColeta pontoColeta;
 
-  @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "feedback_id")
-  private Feedback feedback;
+  @ManyToOne(fetch = FetchType.LAZY, optional = false)
+  @JoinColumn(name = "relato_problema_id", nullable = false)
+  private RelatoProblema relatoProblema;
 }
