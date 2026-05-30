@@ -3,8 +3,7 @@ package com.backend.api.descarteeletronico.service;
 import com.backend.api.descarteeletronico.exception.ResourceNotFoundException;
 import com.backend.api.descarteeletronico.mapper.NotificacaoMapper;
 import com.backend.api.descarteeletronico.model.enums.EntityStatus;
-import com.backend.api.descarteeletronico.model.enums.NotificacaoTipo;
-import com.backend.api.descarteeletronico.model.feedback.Feedback;
+import com.backend.api.descarteeletronico.model.relato.RelatoProblema;
 import com.backend.api.descarteeletronico.model.notificacao.Notificacao;
 import com.backend.api.descarteeletronico.model.notificacao.dto.NotificacaoResponse;
 import com.backend.api.descarteeletronico.model.pontocoleta.PontoColeta;
@@ -22,40 +21,30 @@ import org.springframework.transaction.annotation.Transactional;
 public class NotificacaoService {
 
   private final NotificacaoRepository notificacaoRepository;
-  private final PontoColetaRepository pontoColetaRepository;
   private final NotificacaoMapper notificacaoMapper;
 
   @Transactional
-  public NotificacaoResponse createPontoCheio(UUID pontoColetaId) {
-    PontoColeta pontoColeta = findActivePontoColetaById(pontoColetaId);
-    Notificacao notificacao =
-        new Notificacao(
-            NotificacaoTipo.PONTO_COLETA_CHEIO,
-            "Ponto de coleta cheio",
-            "O ponto de coleta " + pontoColeta.getNome() + " foi reportado como cheio.",
-            pontoColeta,
-            null);
+  public Notificacao criarNotificacaoDeRelato(RelatoProblema relato) {
+    String nomePonto = relato.getPontoColeta().getNome();
+
+    String titulo = gerarTituloNotificacao(relato);
+
+    String mensagem = String.format("O usuário %s relatou: '%s' no ponto %s.",
+            relato.getNome(),
+            relato.getTipoRelato().getDescricao(),
+            nomePonto);
+
+    Notificacao notificacao = new Notificacao(
+            titulo,
+            mensagem,
+            relato.getPontoColeta(),
+            relato
+    );
+
     notificacao.setEntityStatus(EntityStatus.ACTIVE);
     notificacao.setDeletedAt(null);
 
-    return notificacaoMapper.toResponse(notificacaoRepository.save(notificacao));
-  }
-
-  @Transactional
-  public Notificacao createFeedbackRecebido(Feedback feedback) {
-    Notificacao notificacao =
-        new Notificacao(
-            NotificacaoTipo.FEEDBACK_RECEBIDO,
-            "Feedback recebido",
-            "Um novo feedback foi enviado para o ponto de coleta "
-                + feedback.getPontoColeta().getNome()
-                + ".",
-            feedback.getPontoColeta(),
-            feedback);
-    notificacao.setEntityStatus(EntityStatus.ACTIVE);
-    notificacao.setDeletedAt(null);
-
-    return notificacaoRepository.save(notificacao);
+    return notificacaoRepository.saveAndFlush(notificacao);
   }
 
   @Transactional(readOnly = true)
@@ -79,9 +68,9 @@ public class NotificacaoService {
   }
 
   @Transactional
-  public void markFeedbackNotificationsAsViewed(UUID feedbackId) {
+  public void markNotificacoesDoRelatoComoVistas(UUID relatoProblemaId) {
     Set<Notificacao> notificacoes =
-        notificacaoRepository.findAllByFeedbackIdAndEntityStatus(feedbackId, EntityStatus.ACTIVE);
+            notificacaoRepository.findAllByRelatoProblemaIdAndEntityStatus(relatoProblemaId, EntityStatus.ACTIVE);
     notificacoes.forEach(notificacao -> notificacao.setEntityStatus(EntityStatus.INACTIVE));
     notificacaoRepository.saveAll(notificacoes);
   }
@@ -101,9 +90,14 @@ public class NotificacaoService {
         .orElseThrow(() -> new ResourceNotFoundException("Notificação não encontrada"));
   }
 
-  private PontoColeta findActivePontoColetaById(UUID id) {
-    return pontoColetaRepository
-        .findByIdAndEntityStatus(id, EntityStatus.ACTIVE)
-        .orElseThrow(() -> new ResourceNotFoundException("Ponto de coleta não encontrado"));
+  private String gerarTituloNotificacao(RelatoProblema relato) {
+    return switch (relato.getTipoRelato()) {
+      case LIXEIRA_CHEIA -> "Lixeira Cheia";
+      case PONTO_NAO_EXISTE -> "Ponto Inexistente";
+      case LIXEIRA_DANIFICADA -> "Lixeira Danificada";
+      case HORARIO_INCORRETO -> "Horário Incorreto";
+      case MATERIAIS_RECUSADOS -> "Materiais Recusados";
+      case OUTRO -> "Problema Relatado";
+    };
   }
 }

@@ -38,44 +38,43 @@ public class SecurityBeansConfiguration {
   @Bean
   public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
     return http
-         .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-         .csrf(csrf -> csrf.disable())
-        .httpBasic(httpBasic -> httpBasic.disable())
-        .formLogin(formLogin -> formLogin.disable())
-        .logout(logout -> logout.disable())
-        .sessionManagement(
-            session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-        .authorizeHttpRequests(
-            authorize ->
-                authorize
-                    .requestMatchers(
-                        "/health",
-                        "/swagger-ui.html",
-                        "/swagger-ui/**",
-                        "/v3/api-docs",
-                        "/v3/api-docs/**",
-                        "/api/v1/auth/login")
-                    .permitAll()
-                    .requestMatchers(
-                        HttpMethod.GET,
-                        "/api/v1/exemplos",
-                        "/api/v1/exemplos/**",
-                        "/api/v1/pontos-coleta",
-                        "/api/v1/pontos-coleta/**",
-                        "/api/v1/tipos-produto",
-                        "/api/v1/tipos-produto/**")
-                    .permitAll()
-                    .requestMatchers(
-                        HttpMethod.POST,
-                        "/api/v1/pontos-coleta/*/feedbacks",
-                        "/api/v1/pontos-coleta/*/notificacoes/cheio")
-                    .permitAll()
-                    .anyRequest()
-                    .hasRole("ADMIN"))
-        .oauth2ResourceServer(
-            oauth2 ->
-                oauth2.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter())))
-        .build();
+            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+            .csrf(csrf -> csrf.disable())
+            .httpBasic(httpBasic -> httpBasic.disable())
+            .formLogin(formLogin -> formLogin.disable())
+            .logout(logout -> logout.disable())
+            .sessionManagement(
+                    session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .authorizeHttpRequests(
+                    authorize ->
+                            authorize
+                                    .requestMatchers(
+                                            "/health",
+                                            "/swagger-ui.html",
+                                            "/swagger-ui/**",
+                                            "/v3/api-docs",
+                                            "/v3/api-docs/**",
+                                            "/api/v1/auth/login")
+                                    .permitAll()
+                                    .requestMatchers(
+                                            HttpMethod.GET,
+                                            "/api/v1/exemplos",
+                                            "/api/v1/exemplos/**",
+                                            "/api/v1/pontos-coleta",
+                                            "/api/v1/pontos-coleta/**",
+                                            "/api/v1/tipos-produto",
+                                            "/api/v1/tipos-produto/**")
+                                    .permitAll()
+                                    .requestMatchers(
+                                            HttpMethod.POST,
+                                            "/api/v1/pontos-coleta/*/relatos-problema")
+                                    .permitAll()
+                                    .anyRequest()
+                                    .hasRole("ADMIN"))
+            .oauth2ResourceServer(
+                    oauth2 ->
+                            oauth2.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter())))
+            .build();
   }
 
   @Bean
@@ -98,7 +97,7 @@ public class SecurityBeansConfiguration {
 
   @Bean
   public AuthenticationManager authenticationManager(
-      AuthenticationConfiguration authenticationConfiguration) throws Exception {
+          AuthenticationConfiguration authenticationConfiguration) throws Exception {
     return authenticationConfiguration.getAuthenticationManager();
   }
 
@@ -115,7 +114,7 @@ public class SecurityBeansConfiguration {
   @Bean
   public JwtAuthenticationConverter jwtAuthenticationConverter() {
     JwtGrantedAuthoritiesConverter grantedAuthoritiesConverter =
-        new JwtGrantedAuthoritiesConverter();
+            new JwtGrantedAuthoritiesConverter();
     grantedAuthoritiesConverter.setAuthorityPrefix("");
     grantedAuthoritiesConverter.setAuthoritiesClaimName("scope");
 

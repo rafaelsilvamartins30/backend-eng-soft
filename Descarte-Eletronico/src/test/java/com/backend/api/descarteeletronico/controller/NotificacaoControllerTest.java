@@ -14,7 +14,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.backend.api.descarteeletronico.exception.GlobalExceptionHandler;
 import com.backend.api.descarteeletronico.exception.ResourceNotFoundException;
 import com.backend.api.descarteeletronico.model.enums.EntityStatus;
-import com.backend.api.descarteeletronico.model.enums.NotificacaoTipo;
 import com.backend.api.descarteeletronico.model.notificacao.dto.NotificacaoResponse;
 import com.backend.api.descarteeletronico.service.NotificacaoService;
 import java.util.Set;
@@ -35,25 +34,24 @@ class NotificacaoControllerTest {
   void setUp() {
     notificacaoService = mock(NotificacaoService.class);
     mockMvc =
-        MockMvcBuilders.standaloneSetup(new NotificacaoController(notificacaoService))
-            .setControllerAdvice(new GlobalExceptionHandler())
-            .build();
+            MockMvcBuilders.standaloneSetup(new NotificacaoController(notificacaoService))
+                    .setControllerAdvice(new GlobalExceptionHandler())
+                    .build();
 
     id = UUID.randomUUID();
     response =
-        new NotificacaoResponse(
-            id,
-            NotificacaoTipo.PONTO_COLETA_CHEIO,
-            "Ponto de coleta cheio",
-            "O ponto de coleta EcoPonto Centro foi reportado como cheio.",
-            UUID.randomUUID(),
-            "EcoPonto Centro",
-            null,
-            0L,
-            null,
-            null,
-            EntityStatus.ACTIVE,
-            null);
+            new NotificacaoResponse(
+                    id,
+                    "Lixeira Cheia",
+                    "O ponto de coleta EcoPonto Centro foi reportado como cheio.",
+                    UUID.randomUUID(),
+                    "EcoPonto Centro",
+                    UUID.randomUUID(),
+                    0L,
+                    null,
+                    null,
+                    EntityStatus.ACTIVE,
+                    null);
   }
 
   @Test
@@ -61,9 +59,9 @@ class NotificacaoControllerTest {
     when(notificacaoService.findAll()).thenReturn(Set.of(response));
 
     mockMvc
-        .perform(get("/api/v1/notificacoes"))
-        .andExpect(status().isOk())
-        .andExpect(jsonPath("$[0].id").value(id.toString()));
+            .perform(get("/api/v1/notificacoes"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$[0].id").value(id.toString()));
 
     verify(notificacaoService).findAll();
     verifyNoMoreInteractions(notificacaoService);
@@ -74,9 +72,9 @@ class NotificacaoControllerTest {
     when(notificacaoService.findUnread()).thenReturn(Set.of(response));
 
     mockMvc
-        .perform(get("/api/v1/notificacoes/nao-visualizadas"))
-        .andExpect(status().isOk())
-        .andExpect(jsonPath("$[0].entityStatus").value(EntityStatus.ACTIVE.name()));
+            .perform(get("/api/v1/notificacoes/nao-visualizadas"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$[0].entityStatus").value(EntityStatus.ACTIVE.name()));
 
     verify(notificacaoService).findUnread();
     verifyNoMoreInteractions(notificacaoService);
@@ -85,25 +83,24 @@ class NotificacaoControllerTest {
   @Test
   void markAsViewedReturnsOkResponse() throws Exception {
     NotificacaoResponse viewedResponse =
-        new NotificacaoResponse(
-            response.id(),
-            response.tipo(),
-            response.titulo(),
-            response.mensagem(),
-            response.pontoColetaId(),
-            response.pontoColetaNome(),
-            response.feedbackId(),
-            response.version(),
-            response.createdAt(),
-            response.updatedAt(),
-            EntityStatus.INACTIVE,
-            response.deletedAt());
+            new NotificacaoResponse(
+                    response.id(),
+                    response.titulo(),
+                    response.mensagem(),
+                    response.pontoColetaId(),
+                    response.pontoColetaNome(),
+                    response.relatoProblemaId(),
+                    response.version(),
+                    response.createdAt(),
+                    response.updatedAt(),
+                    EntityStatus.INACTIVE,
+                    response.deletedAt());
     when(notificacaoService.markAsViewed(id)).thenReturn(viewedResponse);
 
     mockMvc
-        .perform(patch("/api/v1/notificacoes/{id}/visualizar", id))
-        .andExpect(status().isOk())
-        .andExpect(jsonPath("$.entityStatus").value(EntityStatus.INACTIVE.name()));
+            .perform(patch("/api/v1/notificacoes/{id}/visualizar", id))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.entityStatus").value(EntityStatus.INACTIVE.name()));
 
     verify(notificacaoService).markAsViewed(id);
     verifyNoMoreInteractions(notificacaoService);
@@ -112,12 +109,12 @@ class NotificacaoControllerTest {
   @Test
   void markAsViewedReturnsNotFoundWhenServiceThrows() throws Exception {
     when(notificacaoService.markAsViewed(id))
-        .thenThrow(new ResourceNotFoundException("Notificação não encontrada"));
+            .thenThrow(new ResourceNotFoundException("Notificação não encontrada"));
 
     mockMvc
-        .perform(patch("/api/v1/notificacoes/{id}/visualizar", id))
-        .andExpect(status().isNotFound())
-        .andExpect(jsonPath("$.message").value("Notificação não encontrada"));
+            .perform(patch("/api/v1/notificacoes/{id}/visualizar", id))
+            .andExpect(status().isNotFound())
+            .andExpect(jsonPath("$.message").value("Notificação não encontrada"));
 
     verify(notificacaoService).markAsViewed(id);
     verifyNoMoreInteractions(notificacaoService);
@@ -134,13 +131,13 @@ class NotificacaoControllerTest {
   @Test
   void deleteReturnsNotFoundWhenServiceThrows() throws Exception {
     doThrow(new ResourceNotFoundException("Notificação não encontrada"))
-        .when(notificacaoService)
-        .delete(id);
+            .when(notificacaoService)
+            .delete(id);
 
     mockMvc
-        .perform(delete("/api/v1/notificacoes/{id}", id))
-        .andExpect(status().isNotFound())
-        .andExpect(jsonPath("$.message").value("Notificação não encontrada"));
+            .perform(delete("/api/v1/notificacoes/{id}", id))
+            .andExpect(status().isNotFound())
+            .andExpect(jsonPath("$.message").value("Notificação não encontrada"));
 
     verify(notificacaoService).delete(id);
     verifyNoMoreInteractions(notificacaoService);

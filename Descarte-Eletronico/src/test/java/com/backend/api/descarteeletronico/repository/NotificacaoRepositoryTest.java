@@ -3,8 +3,8 @@ package com.backend.api.descarteeletronico.repository;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.backend.api.descarteeletronico.model.enums.EntityStatus;
-import com.backend.api.descarteeletronico.model.enums.NotificacaoTipo;
-import com.backend.api.descarteeletronico.model.feedback.Feedback;
+import com.backend.api.descarteeletronico.model.enums.TipoRelato;
+import com.backend.api.descarteeletronico.model.relato.RelatoProblema;
 import com.backend.api.descarteeletronico.model.notificacao.Notificacao;
 import com.backend.api.descarteeletronico.model.pontocoleta.PontoColeta;
 import java.math.BigDecimal;
@@ -31,13 +31,13 @@ class NotificacaoRepositoryTest {
 
   @Container
   static final PostgreSQLContainer<?> POSTGRES =
-      new PostgreSQLContainer<>("postgres:16-alpine")
-          .withDatabaseName("descarte_eletronico_test")
-          .withUsername("descarte")
-          .withPassword("descarte");
+          new PostgreSQLContainer<>("postgres:16-alpine")
+                  .withDatabaseName("descarte_eletronico_test")
+                  .withUsername("descarte")
+                  .withPassword("descarte");
 
   @Autowired private NotificacaoRepository notificacaoRepository;
-  @Autowired private FeedbackRepository feedbackRepository;
+  @Autowired private RelatoProblemaRepository relatoProblemaRepository;
   @Autowired private PontoColetaRepository pontoColetaRepository;
   @Autowired private JdbcTemplate jdbcTemplate;
 
@@ -51,9 +51,9 @@ class NotificacaoRepositoryTest {
   @Test
   void flywayMigrationCreatesNotificacaoTable() {
     Boolean notificacaoExists =
-        jdbcTemplate.queryForObject(
-            "select exists (select 1 from information_schema.tables where table_name = 'notificacao')",
-            Boolean.class);
+            jdbcTemplate.queryForObject(
+                    "select exists (select 1 from information_schema.tables where table_name = 'notificacao')",
+                    Boolean.class);
 
     assertThat(notificacaoExists).isTrue();
   }
@@ -68,66 +68,53 @@ class NotificacaoRepositoryTest {
 
     assertThat(result).hasSize(1);
     assertThat(result)
-        .extracting(Notificacao::getEntityStatus)
-        .containsExactly(EntityStatus.ACTIVE);
+            .extracting(Notificacao::getEntityStatus)
+            .containsExactly(EntityStatus.ACTIVE);
   }
 
   @Test
-  void findAllByFeedbackIdAndEntityStatusReturnsOnlyActiveFeedbackNotifications() {
+  void findAllByRelatoProblemaIdAndEntityStatusReturnsOnlyActiveNotifications() {
     PontoColeta pontoColeta = savePontoColeta("EcoPonto Centro");
-    Feedback feedback =
-        feedbackRepository.saveAndFlush(
-            new Feedback(pontoColeta, "Maria Silva", "maria@email.com", "Feedback de teste"));
-    Notificacao active =
-        new Notificacao(
-            NotificacaoTipo.FEEDBACK_RECEBIDO,
-            "Feedback recebido",
-            "Novo feedback recebido.",
-            pontoColeta,
-            feedback);
-    Notificacao inactive =
-        new Notificacao(
-            NotificacaoTipo.FEEDBACK_RECEBIDO,
-            "Feedback recebido",
-            "Novo feedback recebido.",
-            pontoColeta,
-            feedback);
+    RelatoProblema relato =
+            relatoProblemaRepository.saveAndFlush(
+                    new RelatoProblema(pontoColeta, TipoRelato.LIXEIRA_CHEIA, "Maria Silva", "maria@email.com", "Relato de teste"));
+
+    Notificacao active = new Notificacao("Lixeira Cheia", "Novo relato recebido.", pontoColeta, relato);
+    Notificacao inactive = new Notificacao("Lixeira Cheia", "Novo relato recebido.", pontoColeta, relato);
     inactive.setEntityStatus(EntityStatus.INACTIVE);
+
     notificacaoRepository.saveAllAndFlush(Set.of(active, inactive));
 
     Set<Notificacao> result =
-        notificacaoRepository.findAllByFeedbackIdAndEntityStatus(
-            feedback.getId(), EntityStatus.ACTIVE);
+            notificacaoRepository.findAllByRelatoProblemaIdAndEntityStatus(
+                    relato.getId(), EntityStatus.ACTIVE);
 
     assertThat(result).hasSize(1);
     assertThat(result)
-        .extracting(Notificacao::getEntityStatus)
-        .containsExactly(EntityStatus.ACTIVE);
+            .extracting(Notificacao::getEntityStatus)
+            .containsExactly(EntityStatus.ACTIVE);
   }
 
   private Notificacao createNotificacao(EntityStatus entityStatus) {
     PontoColeta pontoColeta = savePontoColeta("EcoPonto " + entityStatus);
-    Notificacao notificacao =
-        new Notificacao(
-            NotificacaoTipo.PONTO_COLETA_CHEIO,
-            "Ponto de coleta cheio",
-            "Ponto reportado como cheio.",
-            pontoColeta,
-            null);
+    RelatoProblema relato = relatoProblemaRepository.saveAndFlush(
+            new RelatoProblema(pontoColeta, TipoRelato.LIXEIRA_CHEIA, "Maria", "m@m.com", "Cheio"));
+
+    Notificacao notificacao = new Notificacao("Lixeira Cheia", "Ponto reportado como cheio.", pontoColeta, relato);
     notificacao.setEntityStatus(entityStatus);
     return notificacao;
   }
 
   private PontoColeta savePontoColeta(String nome) {
     return pontoColetaRepository.saveAndFlush(
-        new PontoColeta(
-            nome,
-            "Rua das Flores, 123",
-            "Recebe eletrônicos",
-            new BigDecimal("-23.5505200"),
-            new BigDecimal("-46.6333080"),
-            LocalTime.of(8, 0),
-            LocalTime.of(18, 0),
-            Set.of()));
+            new PontoColeta(
+                    nome,
+                    "Rua das Flores, 123",
+                    "Recebe eletrônicos",
+                    new BigDecimal("-23.5505200"),
+                    new BigDecimal("-46.6333080"),
+                    LocalTime.of(8, 0),
+                    LocalTime.of(18, 0),
+                    Set.of()));
   }
 }

@@ -6,6 +6,7 @@ spring:
     username: ${DB_USERNAME:descarte}
     password: ${DB_PASSWORD:descarte}
     driver-class-name: org.postgresql.Driver
+    connection-init-sql: "SET client_encoding TO 'UTF8';"
   jpa:
     hibernate:
       ddl-auto: validate
