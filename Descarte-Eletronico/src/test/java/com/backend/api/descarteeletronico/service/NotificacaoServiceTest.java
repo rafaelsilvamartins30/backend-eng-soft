@@ -86,7 +86,7 @@ class NotificacaoServiceTest {
 
   @Test
   void criarNotificacaoDeRelatoSavesActiveNotification() {
-    when(notificacaoRepository.save(org.mockito.ArgumentMatchers.any(Notificacao.class)))
+    when(notificacaoRepository.saveAndFlush(org.mockito.ArgumentMatchers.any(Notificacao.class)))
             .thenAnswer(invocation -> invocation.getArgument(0));
 
     Notificacao result = notificacaoService.criarNotificacaoDeRelato(relato);
@@ -96,7 +96,7 @@ class NotificacaoServiceTest {
     assertThat(result.getRelatoProblema()).isEqualTo(relato);
     assertThat(result.getPontoColeta()).isEqualTo(pontoColeta);
 
-    verify(notificacaoRepository).save(org.mockito.ArgumentMatchers.any(Notificacao.class));
+    verify(notificacaoRepository).saveAndFlush(org.mockito.ArgumentMatchers.any(Notificacao.class));
     verifyNoMoreInteractions(notificacaoRepository);
     verifyNoInteractions(notificacaoMapper);
   }

@@ -90,7 +90,7 @@ class RelatoProblemaServiceTest {
     when(pontoColetaRepository.findByIdAndEntityStatus(pontoColetaId, EntityStatus.ACTIVE))
             .thenReturn(Optional.of(pontoColeta));
     when(relatoProblemaMapper.toEntity(request)).thenReturn(relato);
-    when(relatoProblemaRepository.save(relato)).thenReturn(relato);
+    when(relatoProblemaRepository.saveAndFlush(relato)).thenReturn(relato);
     when(relatoProblemaMapper.toResponse(relato)).thenReturn(response);
 
     RelatoProblemaResponse result = relatoProblemaService.create(pontoColetaId, request);
@@ -102,7 +102,7 @@ class RelatoProblemaServiceTest {
 
     verify(pontoColetaRepository).findByIdAndEntityStatus(pontoColetaId, EntityStatus.ACTIVE);
     verify(relatoProblemaMapper).toEntity(request);
-    verify(relatoProblemaRepository).save(relato);
+    verify(relatoProblemaRepository).saveAndFlush(relato);
     verify(notificacaoService).criarNotificacaoDeRelato(relato);
     verify(relatoProblemaMapper).toResponse(relato);
     verifyNoMoreInteractions(
