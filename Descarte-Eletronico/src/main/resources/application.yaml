@@ -33,3 +33,9 @@ app:
     jwt:
       secret: ${JWT_SECRET:dev-secret-change-me-dev-secret-change-me}
       expiration: ${JWT_EXPIRATION:1h}
+
+logging:
+  level:
+    org.springframework.security: TRACE
+    org.springframework.web: DEBUG
+    org.apache.tomcat.util.net: DEBUG
