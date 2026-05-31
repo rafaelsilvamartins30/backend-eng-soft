@@ -18,6 +18,9 @@ import jakarta.validation.Valid;
 import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -96,6 +99,18 @@ public class PontoColetaController {
   @GetMapping
   public ResponseEntity<Set<PontoColetaResponse>> findAll() {
     return ResponseEntity.ok(pontoColetaService.findAll());
+  }
+
+  @Operation(summary = "Lista administrativa de pontos de coleta com paginação")
+  @ApiResponses({
+          @ApiResponse(
+                  responseCode = "200",
+                  description = "Página de pontos de coleta listada")
+  })
+  @GetMapping("/paged")
+  public ResponseEntity<Page<PontoColetaResponse>> findAllPaged(
+          @PageableDefault(size = 5) Pageable pageable) {
+    return ResponseEntity.ok(pontoColetaService.findAllPaged(pageable));
   }
 
   @Operation(summary = "Atualiza um ponto de coleta administrativo protegido por role ADMIN")
