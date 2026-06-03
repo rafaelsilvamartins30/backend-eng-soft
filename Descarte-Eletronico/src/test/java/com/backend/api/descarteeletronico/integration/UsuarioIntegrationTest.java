@@ -50,8 +50,25 @@ class UsuarioIntegrationTest extends BaseIntegrationTest {
         .body("nome", is("Novo Nome"))
         .body("email", is("novo@descarte.local"));
     
-    // Reset for other tests if necessary, though each test gets a fresh DB usually
-    // but Testcontainers in BaseIntegrationTest is static, so it persists between tests in the same class
-    // actually @SpringBootTest with Testcontainers usually shares the DB unless @DirtiesContext
+    // Restore admin to avoid test pollution
+    String newToken = given()
+        .contentType("application/json")
+        .body("{\"email\": \"novo@descarte.local\", \"senha\": \"Admin@123\"}")
+        .when()
+        .post("/api/v1/auth/login")
+        .then()
+        .statusCode(200)
+        .extract()
+        .path("accessToken");
+        
+    String revertBody = "{\"nome\": \"Administrador\", \"email\": \"admin@descarte.local\"}";
+    given()
+        .header("Authorization", "Bearer " + newToken)
+        .contentType(ContentType.JSON)
+        .body(revertBody)
+    .when()
+        .patch("/api/v1/usuarios/me")
+    .then()
+        .statusCode(200);
   }
 }
