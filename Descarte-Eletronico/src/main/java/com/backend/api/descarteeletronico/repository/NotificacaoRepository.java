@@ -10,15 +10,15 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface NotificacaoRepository extends JpaRepository<Notificacao, UUID> {
 
-  @EntityGraph(attributePaths = {"pontoColeta", "feedback"})
+  @EntityGraph(attributePaths = {"pontoColeta", "relatoProblema"})
   Optional<Notificacao> findByIdAndEntityStatusNot(UUID id, EntityStatus entityStatus);
 
-  @EntityGraph(attributePaths = {"pontoColeta", "feedback"})
+  @EntityGraph(attributePaths = {"pontoColeta", "relatoProblema"})
   Set<Notificacao> findAllByEntityStatusNot(EntityStatus entityStatus);
 
-  @EntityGraph(attributePaths = {"pontoColeta", "feedback"})
+  @EntityGraph(attributePaths = {"pontoColeta", "relatoProblema"})
   Set<Notificacao> findAllByEntityStatus(EntityStatus entityStatus);
 
-  @EntityGraph(attributePaths = {"pontoColeta", "feedback"})
-  Set<Notificacao> findAllByFeedbackIdAndEntityStatus(UUID feedbackId, EntityStatus entityStatus);
+  @EntityGraph(attributePaths = {"pontoColeta", "relatoProblema"})
+  Set<Notificacao> findAllByRelatoProblemaIdAndEntityStatus(UUID relatoProblemaId, EntityStatus entityStatus);
 }

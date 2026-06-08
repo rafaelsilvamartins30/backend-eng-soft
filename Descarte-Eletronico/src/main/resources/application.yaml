@@ -6,6 +6,7 @@ spring:
     username: ${DB_USERNAME:descarte}
     password: ${DB_PASSWORD:descarte}
     driver-class-name: org.postgresql.Driver
+    connection-init-sql: "SET client_encoding TO 'UTF8';"
   jpa:
     hibernate:
       ddl-auto: validate
@@ -32,3 +33,9 @@ app:
     jwt:
       secret: ${JWT_SECRET:dev-secret-change-me-dev-secret-change-me}
       expiration: ${JWT_EXPIRATION:1h}
+
+logging:
+  level:
+    org.springframework.security: TRACE
+    org.springframework.web: DEBUG
+    org.apache.tomcat.util.net: DEBUG

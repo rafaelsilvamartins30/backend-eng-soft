@@ -5,6 +5,9 @@ import com.backend.api.descarteeletronico.model.tipoproduto.TipoProduto;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface TipoProdutoRepository extends JpaRepository<TipoProduto, UUID> {
@@ -14,4 +17,6 @@ public interface TipoProdutoRepository extends JpaRepository<TipoProduto, UUID> 
   Set<TipoProduto> findAllByEntityStatus(EntityStatus entityStatus);
 
   Set<TipoProduto> findAllByIdInAndEntityStatus(Set<UUID> ids, EntityStatus entityStatus);
+
+  Page<TipoProduto> findAllByEntityStatus(EntityStatus entityStatus, Pageable pageable);
 }

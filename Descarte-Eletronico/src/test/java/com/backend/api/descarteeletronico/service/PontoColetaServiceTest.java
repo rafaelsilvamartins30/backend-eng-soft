@@ -19,6 +19,7 @@ import com.backend.api.descarteeletronico.model.tipoproduto.TipoProduto;
 import com.backend.api.descarteeletronico.repository.PontoColetaRepository;
 import com.backend.api.descarteeletronico.repository.TipoProdutoRepository;
 import java.math.BigDecimal;
+import java.time.LocalTime;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -59,6 +60,8 @@ class PontoColetaServiceTest {
             "Recebe eletrônicos de pequeno porte",
             new BigDecimal("-23.5505200"),
             new BigDecimal("-46.6333080"),
+            LocalTime.of(8, 0),
+            LocalTime.of(18, 0),
             Set.of());
     request =
         new PontoColetaRequest(
@@ -67,6 +70,8 @@ class PontoColetaServiceTest {
             pontoColeta.getDescricao(),
             pontoColeta.getLatitude(),
             pontoColeta.getLongitude(),
+            pontoColeta.getHorarioAbertura(),
+            pontoColeta.getHorarioFechamento(),
             Set.of(tipoProdutoId));
     response =
         new PontoColetaResponse(
@@ -76,6 +81,10 @@ class PontoColetaServiceTest {
             request.descricao(),
             request.latitude(),
             request.longitude(),
+            request.horarioAbertura(),
+            request.horarioFechamento(),
+            true,
+            "08:00 às 18:00",
             Set.of(),
             0L,
             null,

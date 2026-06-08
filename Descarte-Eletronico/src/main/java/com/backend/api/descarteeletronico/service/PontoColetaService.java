@@ -15,6 +15,8 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -71,6 +73,13 @@ public class PontoColetaService implements BaseService<PontoColetaRequest, Ponto
     Set<PontoColeta> pontosColeta =
         pontoColetaRepository.findAllByEntityStatus(EntityStatus.ACTIVE);
     return pontoColetaMapper.toResponseSet(pontosColeta);
+  }
+
+  @Transactional(readOnly = true)
+  public Page<PontoColetaResponse> findAllPaged(Pageable pageable) {
+    return pontoColetaRepository
+            .findAllByEntityStatus(EntityStatus.ACTIVE, pageable)
+            .map(pontoColetaMapper::toResponse);
   }
 
   private PontoColeta findActiveEntityById(UUID id) {

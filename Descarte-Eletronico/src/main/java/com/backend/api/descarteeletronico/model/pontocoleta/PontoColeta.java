@@ -10,6 +10,7 @@ import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.Table;
 import java.math.BigDecimal;
+import java.time.LocalTime;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import lombok.AllArgsConstructor;
@@ -39,6 +40,12 @@ public class PontoColeta extends BaseEntity {
 
   @Column(name = "longitude", nullable = false, precision = 10, scale = 7)
   private BigDecimal longitude;
+
+  @Column(name = "horario_abertura", nullable = false)
+  private LocalTime horarioAbertura;
+
+  @Column(name = "horario_fechamento", nullable = false)
+  private LocalTime horarioFechamento;
 
   @ManyToMany(fetch = FetchType.LAZY)
   @JoinTable(

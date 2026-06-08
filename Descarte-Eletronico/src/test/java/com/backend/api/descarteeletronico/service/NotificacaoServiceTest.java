@@ -11,14 +11,14 @@ import static org.mockito.Mockito.when;
 import com.backend.api.descarteeletronico.exception.ResourceNotFoundException;
 import com.backend.api.descarteeletronico.mapper.NotificacaoMapper;
 import com.backend.api.descarteeletronico.model.enums.EntityStatus;
-import com.backend.api.descarteeletronico.model.enums.NotificacaoTipo;
-import com.backend.api.descarteeletronico.model.feedback.Feedback;
+import com.backend.api.descarteeletronico.model.enums.TipoRelato;
+import com.backend.api.descarteeletronico.model.relato.RelatoProblema;
 import com.backend.api.descarteeletronico.model.notificacao.Notificacao;
 import com.backend.api.descarteeletronico.model.notificacao.dto.NotificacaoResponse;
 import com.backend.api.descarteeletronico.model.pontocoleta.PontoColeta;
 import com.backend.api.descarteeletronico.repository.NotificacaoRepository;
-import com.backend.api.descarteeletronico.repository.PontoColetaRepository;
 import java.math.BigDecimal;
+import java.time.LocalTime;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -34,100 +34,71 @@ class NotificacaoServiceTest {
 
   @Mock private NotificacaoRepository notificacaoRepository;
 
-  @Mock private PontoColetaRepository pontoColetaRepository;
-
   @Mock private NotificacaoMapper notificacaoMapper;
 
   @InjectMocks private NotificacaoService notificacaoService;
 
   private UUID id;
-  private UUID pontoColetaId;
   private PontoColeta pontoColeta;
-  private Feedback feedback;
+  private RelatoProblema relato;
   private Notificacao notificacao;
   private NotificacaoResponse response;
 
   @BeforeEach
   void setUp() {
     id = UUID.randomUUID();
-    pontoColetaId = UUID.randomUUID();
     pontoColeta =
-        new PontoColeta(
-            "EcoPonto Centro",
-            "Rua das Flores, 123",
-            "Recebe eletrônicos",
-            new BigDecimal("-23.5505200"),
-            new BigDecimal("-46.6333080"),
-            Set.of());
-    feedback = new Feedback(pontoColeta, "Maria Silva", "maria@email.com", "Muito bom.");
+            new PontoColeta(
+                    "EcoPonto Centro",
+                    "Rua das Flores, 123",
+                    "Recebe eletrônicos",
+                    new BigDecimal("-23.5505200"),
+                    new BigDecimal("-46.6333080"),
+                    LocalTime.of(8, 0),
+                    LocalTime.of(18, 0),
+                    Set.of());
+
+    relato = new RelatoProblema(pontoColeta, TipoRelato.LIXEIRA_CHEIA, "Maria Silva", "maria@email.com", "Muito cheia");
+    relato.setId(UUID.randomUUID());
+
     notificacao =
-        new Notificacao(
-            NotificacaoTipo.PONTO_COLETA_CHEIO,
-            "Ponto de coleta cheio",
-            "O ponto de coleta EcoPonto Centro foi reportado como cheio.",
-            pontoColeta,
-            null);
+            new Notificacao(
+                    "Lixeira Cheia",
+                    "O usuário Maria Silva relatou: 'Lixeira reportada como cheia' no ponto EcoPonto Centro.",
+                    pontoColeta,
+                    relato);
+    notificacao.setEntityStatus(EntityStatus.ACTIVE);
+
     response =
-        new NotificacaoResponse(
-            id,
-            notificacao.getTipo(),
-            notificacao.getTitulo(),
-            notificacao.getMensagem(),
-            pontoColetaId,
-            pontoColeta.getNome(),
-            null,
-            0L,
-            null,
-            null,
-            EntityStatus.ACTIVE,
-            null);
+            new NotificacaoResponse(
+                    id,
+                    notificacao.getTitulo(),
+                    notificacao.getMensagem(),
+                    UUID.randomUUID(),
+                    pontoColeta.getNome(),
+                    relato.getId(),
+                    0L,
+                    null,
+                    null,
+                    EntityStatus.ACTIVE,
+                    null);
   }
 
   @Test
-  void createPontoCheioSavesActiveNotificationAndReturnsResponse() {
-    when(pontoColetaRepository.findByIdAndEntityStatus(pontoColetaId, EntityStatus.ACTIVE))
-        .thenReturn(Optional.of(pontoColeta));
-    when(notificacaoRepository.save(org.mockito.ArgumentMatchers.any(Notificacao.class)))
-        .thenAnswer(invocation -> invocation.getArgument(0));
-    when(notificacaoMapper.toResponse(org.mockito.ArgumentMatchers.any(Notificacao.class)))
-        .thenReturn(response);
+  void criarNotificacaoDeRelatoSavesActiveNotification() {
+    when(notificacaoRepository.saveAndFlush(org.mockito.ArgumentMatchers.any(Notificacao.class)))
+            .thenAnswer(invocation -> invocation.getArgument(0));
 
-    NotificacaoResponse result = notificacaoService.createPontoCheio(pontoColetaId);
+    Notificacao result = notificacaoService.criarNotificacaoDeRelato(relato);
 
-    assertThat(result).isEqualTo(response);
-    verify(pontoColetaRepository).findByIdAndEntityStatus(pontoColetaId, EntityStatus.ACTIVE);
-    verify(notificacaoRepository).save(org.mockito.ArgumentMatchers.any(Notificacao.class));
-    verify(notificacaoMapper).toResponse(org.mockito.ArgumentMatchers.any(Notificacao.class));
-    verifyNoMoreInteractions(pontoColetaRepository, notificacaoRepository, notificacaoMapper);
-  }
-
-  @Test
-  void createPontoCheioThrowsWhenPontoColetaDoesNotExist() {
-    when(pontoColetaRepository.findByIdAndEntityStatus(pontoColetaId, EntityStatus.ACTIVE))
-        .thenReturn(Optional.empty());
-
-    assertThatThrownBy(() -> notificacaoService.createPontoCheio(pontoColetaId))
-        .isInstanceOf(ResourceNotFoundException.class)
-        .hasMessage("Ponto de coleta não encontrado");
-    verify(pontoColetaRepository).findByIdAndEntityStatus(pontoColetaId, EntityStatus.ACTIVE);
-    verifyNoInteractions(notificacaoRepository, notificacaoMapper);
-    verifyNoMoreInteractions(pontoColetaRepository);
-  }
-
-  @Test
-  void createFeedbackRecebidoSavesActiveNotification() {
-    when(notificacaoRepository.save(org.mockito.ArgumentMatchers.any(Notificacao.class)))
-        .thenAnswer(invocation -> invocation.getArgument(0));
-
-    Notificacao result = notificacaoService.createFeedbackRecebido(feedback);
-
-    assertThat(result.getTipo()).isEqualTo(NotificacaoTipo.FEEDBACK_RECEBIDO);
+    assertThat(result.getTitulo()).isEqualTo("Lixeira Cheia");
     assertThat(result.getEntityStatus()).isEqualTo(EntityStatus.ACTIVE);
-    assertThat(result.getFeedback()).isEqualTo(feedback);
+    assertThat(result.getRelatoProblema()).isEqualTo(relato);
     assertThat(result.getPontoColeta()).isEqualTo(pontoColeta);
-    verify(notificacaoRepository).save(org.mockito.ArgumentMatchers.any(Notificacao.class));
+
+    verify(notificacaoRepository).saveAndFlush(org.mockito.ArgumentMatchers.any(Notificacao.class));
     verifyNoMoreInteractions(notificacaoRepository);
-    verifyNoInteractions(pontoColetaRepository, notificacaoMapper);
+    verifyNoInteractions(notificacaoMapper);
   }
 
   @Test
@@ -143,13 +114,12 @@ class NotificacaoServiceTest {
     verify(notificacaoRepository).findAllByEntityStatus(EntityStatus.ACTIVE);
     verify(notificacaoMapper).toResponseSet(notificacoes);
     verifyNoMoreInteractions(notificacaoRepository, notificacaoMapper);
-    verifyNoInteractions(pontoColetaRepository);
   }
 
   @Test
   void markAsViewedMarksNotificationAsInactive() {
     when(notificacaoRepository.findByIdAndEntityStatusNot(id, EntityStatus.DELETED))
-        .thenReturn(Optional.of(notificacao));
+            .thenReturn(Optional.of(notificacao));
     when(notificacaoRepository.save(notificacao)).thenReturn(notificacao);
     when(notificacaoMapper.toResponse(notificacao)).thenReturn(response);
 
@@ -161,13 +131,26 @@ class NotificacaoServiceTest {
     verify(notificacaoRepository).save(notificacao);
     verify(notificacaoMapper).toResponse(notificacao);
     verifyNoMoreInteractions(notificacaoRepository, notificacaoMapper);
-    verifyNoInteractions(pontoColetaRepository);
+  }
+
+  @Test
+  void markNotificacoesDoRelatoComoVistasUpdatesStatus() {
+    Set<Notificacao> notificacoes = Set.of(notificacao);
+    when(notificacaoRepository.findAllByRelatoProblemaIdAndEntityStatus(relato.getId(), EntityStatus.ACTIVE))
+            .thenReturn(notificacoes);
+
+    notificacaoService.markNotificacoesDoRelatoComoVistas(relato.getId());
+
+    assertThat(notificacao.getEntityStatus()).isEqualTo(EntityStatus.INACTIVE);
+    verify(notificacaoRepository).findAllByRelatoProblemaIdAndEntityStatus(relato.getId(), EntityStatus.ACTIVE);
+    verify(notificacaoRepository).saveAll(notificacoes);
+    verifyNoMoreInteractions(notificacaoRepository);
   }
 
   @Test
   void deleteMarksNotificationAsDeleted() {
     when(notificacaoRepository.findByIdAndEntityStatusNot(id, EntityStatus.DELETED))
-        .thenReturn(Optional.of(notificacao));
+            .thenReturn(Optional.of(notificacao));
 
     notificacaoService.delete(id);
 
@@ -176,20 +159,21 @@ class NotificacaoServiceTest {
     verify(notificacaoRepository).findByIdAndEntityStatusNot(id, EntityStatus.DELETED);
     verify(notificacaoRepository).save(notificacao);
     verifyNoMoreInteractions(notificacaoRepository);
-    verifyNoInteractions(pontoColetaRepository, notificacaoMapper);
+    verifyNoInteractions(notificacaoMapper);
   }
 
   @Test
   void deleteThrowsWhenNotificationDoesNotExist() {
     when(notificacaoRepository.findByIdAndEntityStatusNot(id, EntityStatus.DELETED))
-        .thenReturn(Optional.empty());
+            .thenReturn(Optional.empty());
 
     assertThatThrownBy(() -> notificacaoService.delete(id))
-        .isInstanceOf(ResourceNotFoundException.class)
-        .hasMessage("Notificação não encontrada");
+            .isInstanceOf(ResourceNotFoundException.class)
+            .hasMessage("Notificação não encontrada");
+
     verify(notificacaoRepository).findByIdAndEntityStatusNot(id, EntityStatus.DELETED);
     verify(notificacaoRepository, never()).save(notificacao);
-    verifyNoInteractions(pontoColetaRepository, notificacaoMapper);
+    verifyNoInteractions(notificacaoMapper);
     verifyNoMoreInteractions(notificacaoRepository);
   }
 }
