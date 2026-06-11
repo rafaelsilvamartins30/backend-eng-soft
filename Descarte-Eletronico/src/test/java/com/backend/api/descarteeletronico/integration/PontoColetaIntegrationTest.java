@@ -12,84 +12,101 @@ import java.math.BigDecimal;
 import java.time.LocalTime;
 import java.util.Set;
 import java.util.UUID;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 
+@TestClassOrder(ClassOrderer.OrderAnnotation.class)
 class PontoColetaIntegrationTest extends BaseIntegrationTest {
 
-  @Test
-  void fullPontoColetaFlow() {
-    String token = getAdminToken();
+  @Nested
+  @Order(1)
+  @DisplayName("Cenários de Fluxo Completo")
+  @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+  class FluxoCompleto {
 
-    // 1. Criar um Tipo de Produto
-    TipoProdutoRequest tipoRequest = new TipoProdutoRequest("Eletrônicos", "Celulares, tablets");
-    UUID tipoId = given()
-        .header("Authorization", "Bearer " + token)
-        .contentType(ContentType.JSON)
-        .body(tipoRequest)
-    .when()
-        .post("/api/v1/tipos-produto")
-    .then()
-        .statusCode(201)
-        .extract().jsonPath().getUUID("id");
+    @Test
+    @Order(1)
+    void fullPontoColetaFlow() {
+      String token = getAdminToken();
 
-    // 2. Criar um Ponto de Coleta
-    PontoColetaRequest pontoRequest = new PontoColetaRequest(
-        "Ponto Teste", "Rua Teste, 100", "Desc",
-        new BigDecimal("-23.5"), new BigDecimal("-46.6"),
-        LocalTime.of(8, 0), LocalTime.of(18, 0),
-        Set.of(tipoId)
-    );
+      // 1. Criar um Tipo de Produto
+      TipoProdutoRequest tipoRequest = new TipoProdutoRequest("Eletrônicos", "Celulares, tablets");
+      UUID tipoId = given()
+          .header("Authorization", "Bearer " + token)
+          .contentType(ContentType.JSON)
+          .body(tipoRequest)
+      .when()
+          .post("/api/v1/tipos-produto")
+      .then()
+          .statusCode(201)
+          .extract().jsonPath().getUUID("id");
 
-    UUID pontoId = given()
-        .header("Authorization", "Bearer " + token)
-        .contentType(ContentType.JSON)
-        .body(pontoRequest)
-    .when()
-        .post("/api/v1/pontos-coleta")
-    .then()
-        .statusCode(201)
-        .body("nome", is("Ponto Teste"))
-        .extract().jsonPath().getUUID("id");
+      // 2. Criar um Ponto de Coleta
+      PontoColetaRequest pontoRequest = new PontoColetaRequest(
+          "Ponto Teste", "Rua Teste, 100", "Desc",
+          new BigDecimal("-23.5"), new BigDecimal("-46.6"),
+          LocalTime.of(8, 0), LocalTime.of(18, 0),
+          Set.of(tipoId)
+      );
 
-    // 3. Listar pontos (Público)
-    given()
-    .when()
-        .get("/api/v1/pontos-coleta")
-    .then()
-        .statusCode(200)
-        .body("$", hasSize(greaterThanOrEqualTo(1)));
+      UUID pontoId = given()
+          .header("Authorization", "Bearer " + token)
+          .contentType(ContentType.JSON)
+          .body(pontoRequest)
+      .when()
+          .post("/api/v1/pontos-coleta")
+      .then()
+          .statusCode(201)
+          .body("nome", is("Ponto Teste"))
+          .extract().jsonPath().getUUID("id");
 
-    // 4. Deletar ponto (Admin)
-    given()
-        .header("Authorization", "Bearer " + token)
-    .when()
-        .delete("/api/v1/pontos-coleta/" + pontoId)
-    .then()
-        .statusCode(204);
+      // 3. Listar pontos (Público)
+      given()
+      .when()
+          .get("/api/v1/pontos-coleta")
+      .then()
+          .statusCode(200)
+          .body("$", hasSize(greaterThanOrEqualTo(1)));
 
-    // 5. Verificar que sumiu da lista pública
-    given()
-    .when()
-        .get("/api/v1/pontos-coleta/" + pontoId)
-    .then()
-        .statusCode(404);
+      // 4. Deletar ponto (Admin)
+      given()
+          .header("Authorization", "Bearer " + token)
+      .when()
+          .delete("/api/v1/pontos-coleta/" + pontoId)
+      .then()
+          .statusCode(204);
+
+      // 5. Verificar que sumiu da lista pública
+      given()
+      .when()
+          .get("/api/v1/pontos-coleta/" + pontoId)
+      .then()
+          .statusCode(404);
+    }
   }
 
-  @Test
-  void createPontoWithoutTokenReturnsForbidden() {
-    PontoColetaRequest pontoRequest = new PontoColetaRequest(
-        "Ponto Teste", "Rua Teste, 100", "Desc",
-        new BigDecimal("-23.5"), new BigDecimal("-46.6"),
-        LocalTime.of(8, 0), LocalTime.of(18, 0),
-        Set.of(UUID.randomUUID())
-    );
+  @Nested
+  @Order(2)
+  @DisplayName("Cenários de Segurança")
+  @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+  class Seguranca {
 
-    given()
-        .contentType(ContentType.JSON)
-        .body(pontoRequest)
-    .when()
-        .post("/api/v1/pontos-coleta")
-    .then()
-        .statusCode(401); // Se não enviar nada, o Resource Server retorna 401
+    @Test
+    @Order(1)
+    void createPontoWithoutTokenReturnsForbidden() {
+      PontoColetaRequest pontoRequest = new PontoColetaRequest(
+          "Ponto Teste", "Rua Teste, 100", "Desc",
+          new BigDecimal("-23.5"), new BigDecimal("-46.6"),
+          LocalTime.of(8, 0), LocalTime.of(18, 0),
+          Set.of(UUID.randomUUID())
+      );
+
+      given()
+          .contentType(ContentType.JSON)
+          .body(pontoRequest)
+      .when()
+          .post("/api/v1/pontos-coleta")
+      .then()
+          .statusCode(401); // Se não enviar nada, o Resource Server retorna 401
+    }
   }
 }

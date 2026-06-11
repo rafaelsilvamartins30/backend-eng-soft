@@ -19,13 +19,21 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.ClassOrderer;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestClassOrder;
+import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
+@TestClassOrder(ClassOrderer.OrderAnnotation.class)
 class ExemploServiceTest {
 
   @Mock private ExemploRepository exemploRepository;
@@ -49,137 +57,174 @@ class ExemploServiceTest {
             id, request.nome(), request.descricao(), 0L, null, null, EntityStatus.ACTIVE, null);
   }
 
-  @Test
-  void createSavesActiveEntityAndReturnsResponse() {
-    when(exemploMapper.toEntity(request)).thenReturn(exemplo);
-    when(exemploRepository.save(exemplo)).thenReturn(exemplo);
-    when(exemploMapper.toResponse(exemplo)).thenReturn(response);
+  @Nested
+  @Order(1)
+  @DisplayName("Cenários de Cadastro")
+  @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+  class CadastroTests {
 
-    ExemploResponse result = exemploService.create(request);
+    @Test
+    @Order(1)
+    void createSavesActiveEntityAndReturnsResponse() {
+      when(exemploMapper.toEntity(request)).thenReturn(exemplo);
+      when(exemploRepository.save(exemplo)).thenReturn(exemplo);
+      when(exemploMapper.toResponse(exemplo)).thenReturn(response);
 
-    assertThat(result).isEqualTo(response);
-    assertThat(exemplo.getEntityStatus()).isEqualTo(EntityStatus.ACTIVE);
-    assertThat(exemplo.getDeletedAt()).isNull();
-    verify(exemploMapper).toEntity(request);
-    verify(exemploRepository).save(exemplo);
-    verify(exemploMapper).toResponse(exemplo);
-    verifyNoMoreInteractions(exemploRepository, exemploMapper);
+      ExemploResponse result = exemploService.create(request);
+
+      assertThat(result).isEqualTo(response);
+      assertThat(exemplo.getEntityStatus()).isEqualTo(EntityStatus.ACTIVE);
+      assertThat(exemplo.getDeletedAt()).isNull();
+      verify(exemploMapper).toEntity(request);
+      verify(exemploRepository).save(exemplo);
+      verify(exemploMapper).toResponse(exemplo);
+      verifyNoMoreInteractions(exemploRepository, exemploMapper);
+    }
   }
 
-  @Test
-  void updateFindsActiveEntityAppliesMapperAndReturnsResponse() {
-    when(exemploRepository.findByIdAndEntityStatus(id, EntityStatus.ACTIVE))
-        .thenReturn(Optional.of(exemplo));
-    when(exemploRepository.save(exemplo)).thenReturn(exemplo);
-    when(exemploMapper.toResponse(exemplo)).thenReturn(response);
+  @Nested
+  @Order(2)
+  @DisplayName("Cenários de Consulta")
+  @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+  class ConsultaTests {
 
-    ExemploResponse result = exemploService.update(id, request);
+    @Test
+    @Order(1)
+    void findByIdReturnsMappedActiveEntity() {
+      when(exemploRepository.findByIdAndEntityStatus(id, EntityStatus.ACTIVE))
+          .thenReturn(Optional.of(exemplo));
+      when(exemploMapper.toResponse(exemplo)).thenReturn(response);
 
-    assertThat(result).isEqualTo(response);
-    verify(exemploRepository).findByIdAndEntityStatus(id, EntityStatus.ACTIVE);
-    verify(exemploMapper).updateEntityFromRequest(request, exemplo);
-    verify(exemploRepository).save(exemplo);
-    verify(exemploMapper).toResponse(exemplo);
-    verifyNoMoreInteractions(exemploRepository, exemploMapper);
+      ExemploResponse result = exemploService.findById(id);
+
+      assertThat(result).isEqualTo(response);
+      verify(exemploRepository).findByIdAndEntityStatus(id, EntityStatus.ACTIVE);
+      verify(exemploMapper).toResponse(exemplo);
+      verifyNoMoreInteractions(exemploRepository, exemploMapper);
+    }
+
+    @Test
+    @Order(2)
+    void findByIdThrowsWhenEntityDoesNotExist() {
+      when(exemploRepository.findByIdAndEntityStatus(id, EntityStatus.ACTIVE))
+          .thenReturn(Optional.empty());
+
+      assertThatThrownBy(() -> exemploService.findById(id))
+          .isInstanceOf(ResourceNotFoundException.class)
+          .hasMessage("Exemplo não encontrado");
+      verify(exemploRepository).findByIdAndEntityStatus(id, EntityStatus.ACTIVE);
+      verifyNoInteractions(exemploMapper);
+      verifyNoMoreInteractions(exemploRepository);
+    }
+
+    @Test
+    @Order(3)
+    void findAllReturnsOnlyActiveEntitiesAndMapsResponses() {
+      Set<Exemplo> exemplos = Set.of(exemplo);
+      Set<ExemploResponse> responses = Set.of(response);
+      when(exemploRepository.findAllByEntityStatus(EntityStatus.ACTIVE)).thenReturn(exemplos);
+      when(exemploMapper.toResponseSet(exemplos)).thenReturn(responses);
+
+      Set<ExemploResponse> result = exemploService.findAll();
+
+      assertThat(result).isEqualTo(responses);
+      verify(exemploRepository).findAllByEntityStatus(EntityStatus.ACTIVE);
+      verify(exemploMapper).toResponseSet(exemplos);
+      verifyNoMoreInteractions(exemploRepository, exemploMapper);
+    }
+
+    @Test
+    @Order(4)
+    void findAllWithEmptyResultDelegatesToMapper() {
+      Set<Exemplo> exemplos = Set.of();
+      Set<ExemploResponse> responses = Set.of();
+      when(exemploRepository.findAllByEntityStatus(EntityStatus.ACTIVE)).thenReturn(exemplos);
+      when(exemploMapper.toResponseSet(exemplos)).thenReturn(responses);
+
+      Set<ExemploResponse> result = exemploService.findAll();
+
+      assertThat(result).isEmpty();
+      verify(exemploRepository).findAllByEntityStatus(EntityStatus.ACTIVE);
+      verify(exemploMapper).toResponseSet(exemplos);
+      verifyNoMoreInteractions(exemploRepository, exemploMapper);
+    }
   }
 
-  @Test
-  void updateThrowsWhenEntityDoesNotExist() {
-    when(exemploRepository.findByIdAndEntityStatus(id, EntityStatus.ACTIVE))
-        .thenReturn(Optional.empty());
+  @Nested
+  @Order(3)
+  @DisplayName("Cenários de Atualização")
+  @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+  class AtualizacaoTests {
 
-    assertThatThrownBy(() -> exemploService.update(id, request))
-        .isInstanceOf(ResourceNotFoundException.class)
-        .hasMessage("Exemplo não encontrado");
-    verify(exemploRepository).findByIdAndEntityStatus(id, EntityStatus.ACTIVE);
-    verify(exemploRepository, never()).save(exemplo);
-    verifyNoInteractions(exemploMapper);
-    verifyNoMoreInteractions(exemploRepository);
+    @Test
+    @Order(1)
+    void updateFindsActiveEntityAppliesMapperAndReturnsResponse() {
+      when(exemploRepository.findByIdAndEntityStatus(id, EntityStatus.ACTIVE))
+          .thenReturn(Optional.of(exemplo));
+      when(exemploRepository.save(exemplo)).thenReturn(exemplo);
+      when(exemploMapper.toResponse(exemplo)).thenReturn(response);
+
+      ExemploResponse result = exemploService.update(id, request);
+
+      assertThat(result).isEqualTo(response);
+      verify(exemploRepository).findByIdAndEntityStatus(id, EntityStatus.ACTIVE);
+      verify(exemploMapper).updateEntityFromRequest(request, exemplo);
+      verify(exemploRepository).save(exemplo);
+      verify(exemploMapper).toResponse(exemplo);
+      verifyNoMoreInteractions(exemploRepository, exemploMapper);
+    }
+
+    @Test
+    @Order(2)
+    void updateThrowsWhenEntityDoesNotExist() {
+      when(exemploRepository.findByIdAndEntityStatus(id, EntityStatus.ACTIVE))
+          .thenReturn(Optional.empty());
+
+      assertThatThrownBy(() -> exemploService.update(id, request))
+          .isInstanceOf(ResourceNotFoundException.class)
+          .hasMessage("Exemplo não encontrado");
+      verify(exemploRepository).findByIdAndEntityStatus(id, EntityStatus.ACTIVE);
+      verify(exemploRepository, never()).save(exemplo);
+      verifyNoInteractions(exemploMapper);
+      verifyNoMoreInteractions(exemploRepository);
+    }
   }
 
-  @Test
-  void deleteMarksEntityAsDeletedAndPersistsSoftDelete() {
-    when(exemploRepository.findByIdAndEntityStatus(id, EntityStatus.ACTIVE))
-        .thenReturn(Optional.of(exemplo));
+  @Nested
+  @Order(4)
+  @DisplayName("Cenários de Exclusão")
+  @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+  class ExclusaoTests {
 
-    exemploService.delete(id);
+    @Test
+    @Order(1)
+    void deleteMarksEntityAsDeletedAndPersistsSoftDelete() {
+      when(exemploRepository.findByIdAndEntityStatus(id, EntityStatus.ACTIVE))
+          .thenReturn(Optional.of(exemplo));
 
-    assertThat(exemplo.getEntityStatus()).isEqualTo(EntityStatus.DELETED);
-    assertThat(exemplo.getDeletedAt()).isNotNull();
-    verify(exemploRepository).findByIdAndEntityStatus(id, EntityStatus.ACTIVE);
-    verify(exemploRepository).save(exemplo);
-    verifyNoInteractions(exemploMapper);
-    verifyNoMoreInteractions(exemploRepository);
-  }
+      exemploService.delete(id);
 
-  @Test
-  void deleteThrowsWhenEntityDoesNotExist() {
-    when(exemploRepository.findByIdAndEntityStatus(id, EntityStatus.ACTIVE))
-        .thenReturn(Optional.empty());
+      assertThat(exemplo.getEntityStatus()).isEqualTo(EntityStatus.DELETED);
+      assertThat(exemplo.getDeletedAt()).isNotNull();
+      verify(exemploRepository).findByIdAndEntityStatus(id, EntityStatus.ACTIVE);
+      verify(exemploRepository).save(exemplo);
+      verifyNoInteractions(exemploMapper);
+      verifyNoMoreInteractions(exemploRepository);
+    }
 
-    assertThatThrownBy(() -> exemploService.delete(id))
-        .isInstanceOf(ResourceNotFoundException.class)
-        .hasMessage("Exemplo não encontrado");
-    verify(exemploRepository).findByIdAndEntityStatus(id, EntityStatus.ACTIVE);
-    verify(exemploRepository, never()).save(exemplo);
-    verifyNoInteractions(exemploMapper);
-    verifyNoMoreInteractions(exemploRepository);
-  }
+    @Test
+    @Order(2)
+    void deleteThrowsWhenEntityDoesNotExist() {
+      when(exemploRepository.findByIdAndEntityStatus(id, EntityStatus.ACTIVE))
+          .thenReturn(Optional.empty());
 
-  @Test
-  void findByIdReturnsMappedActiveEntity() {
-    when(exemploRepository.findByIdAndEntityStatus(id, EntityStatus.ACTIVE))
-        .thenReturn(Optional.of(exemplo));
-    when(exemploMapper.toResponse(exemplo)).thenReturn(response);
-
-    ExemploResponse result = exemploService.findById(id);
-
-    assertThat(result).isEqualTo(response);
-    verify(exemploRepository).findByIdAndEntityStatus(id, EntityStatus.ACTIVE);
-    verify(exemploMapper).toResponse(exemplo);
-    verifyNoMoreInteractions(exemploRepository, exemploMapper);
-  }
-
-  @Test
-  void findByIdThrowsWhenEntityDoesNotExist() {
-    when(exemploRepository.findByIdAndEntityStatus(id, EntityStatus.ACTIVE))
-        .thenReturn(Optional.empty());
-
-    assertThatThrownBy(() -> exemploService.findById(id))
-        .isInstanceOf(ResourceNotFoundException.class)
-        .hasMessage("Exemplo não encontrado");
-    verify(exemploRepository).findByIdAndEntityStatus(id, EntityStatus.ACTIVE);
-    verifyNoInteractions(exemploMapper);
-    verifyNoMoreInteractions(exemploRepository);
-  }
-
-  @Test
-  void findAllReturnsOnlyActiveEntitiesAndMapsResponses() {
-    Set<Exemplo> exemplos = Set.of(exemplo);
-    Set<ExemploResponse> responses = Set.of(response);
-    when(exemploRepository.findAllByEntityStatus(EntityStatus.ACTIVE)).thenReturn(exemplos);
-    when(exemploMapper.toResponseSet(exemplos)).thenReturn(responses);
-
-    Set<ExemploResponse> result = exemploService.findAll();
-
-    assertThat(result).isEqualTo(responses);
-    verify(exemploRepository).findAllByEntityStatus(EntityStatus.ACTIVE);
-    verify(exemploMapper).toResponseSet(exemplos);
-    verifyNoMoreInteractions(exemploRepository, exemploMapper);
-  }
-
-  @Test
-  void findAllWithEmptyResultDelegatesToMapper() {
-    Set<Exemplo> exemplos = Set.of();
-    Set<ExemploResponse> responses = Set.of();
-    when(exemploRepository.findAllByEntityStatus(EntityStatus.ACTIVE)).thenReturn(exemplos);
-    when(exemploMapper.toResponseSet(exemplos)).thenReturn(responses);
-
-    Set<ExemploResponse> result = exemploService.findAll();
-
-    assertThat(result).isEmpty();
-    verify(exemploRepository).findAllByEntityStatus(EntityStatus.ACTIVE);
-    verify(exemploMapper).toResponseSet(exemplos);
-    verifyNoMoreInteractions(exemploRepository, exemploMapper);
+      assertThatThrownBy(() -> exemploService.delete(id))
+          .isInstanceOf(ResourceNotFoundException.class)
+          .hasMessage("Exemplo não encontrado");
+      verify(exemploRepository).findByIdAndEntityStatus(id, EntityStatus.ACTIVE);
+      verify(exemploRepository, never()).save(exemplo);
+      verifyNoInteractions(exemploMapper);
+      verifyNoMoreInteractions(exemploRepository);
+    }
   }
 }

@@ -1,99 +1,93 @@
 # Descarte Eletrônico - Backend
 
-API REST desenvolvida com Spring Boot 4 e Java 21 para o gerenciamento de pontos de coleta de resíduos eletrônicos.
+API REST desenvolvida com Spring Boot para o gerenciamento de pontos de coleta de resíduos eletrônicos.
 
-O projeto foca em fornecer uma plataforma para que administradores gerenciem locais de descarte e usuários possam localizar pontos próximos e reportar problemas.
+## 🛠️ Ferramentas Necessárias
+Para rodar este projeto, você precisará das seguintes ferramentas instaladas:
+- **Java 21+ (JDK)**
+- **Docker & Docker Compose**
+- **Maven** (opcional, pois o projeto inclui o Maven Wrapper `./mvnw`)
 
-## 🚀 Tecnologias
+## 🏗️ Estrutura de Pastas
+A organização do projeto segue a estrutura abaixo:
+```
+.
+├── api-collections/      # Coleções de API (HTTP YAML) para testes e documentação
+├── api-docs.json         # Especificação OpenAPI 3.1.0 completa
+├── .github/              # Workflows do GitHub Actions (CI/CD)
+└── Descarte-Eletronico/  # Diretório principal da aplicação Spring Boot
+    ├── src/
+    │   ├── main/
+    │   │   ├── java/     # Código-fonte (Controllers, Services, Models, Security, etc.)
+    │   │   └── resources/# Arquivos de configuração e migrações do banco (Flyway)
+    │   └── test/         # Suíte de testes unitários e de integração (Testcontainers)
+    ├── Dockerfile        # Configuração para containerização da aplicação
+    ├── compose.yaml      # Orquestração do banco de dados PostgreSQL
+    └── pom.xml           # Gerenciador de dependências e build do Maven
+```
 
-- **Java 21** & **Spring Boot 4**
-- **Spring Security** com JWT (OAuth2 Resource Server)
-- **Spring Data JPA** com PostgreSQL
-- **Flyway** para migrações de banco de dados
-- **MapStruct** para mapeamento de DTOs
-- **SpringDoc OpenAPI** (Swagger) para documentação
-- **Testcontainers** para testes de integração reais
-- **Docker Compose** para ambiente de desenvolvimento
+## 🚀 Comandos para Rodar o Projeto
+Siga os passos abaixo para iniciar a aplicação em seu ambiente local:
 
-## 🛠️ Como Rodar
-
-### Pré-requisitos
-- Java 21+
-- Docker & Docker Compose
-- Maven (ou use o `./mvnw` incluso)
-
-### Passos
-1. Entre no diretório do projeto:
+1. **Entre no diretório do projeto:**
    ```bash
    cd Descarte-Eletronico
    ```
-2. Prepare o ambiente:
+
+2. **Configure as variáveis de ambiente:**
+   Crie um arquivo `.env` baseado no exemplo fornecido:
    ```bash
    cp .env.example .env
    ```
-3. Suba o banco de dados:
+
+3. **Inicie o banco de dados:**
+   Certifique-se de que o Docker está rodando e execute:
    ```bash
    docker compose up -d postgres
    ```
-4. Execute os testes:
-   ```bash
-   ./mvnw test
-   ```
-5. Inicie a aplicação:
+
+4. **Execute a aplicação:**
    ```bash
    ./mvnw spring-boot:run
    ```
 
-A documentação interativa estará disponível em: [http://localhost:8080/swagger-ui.html](http://localhost:8080/swagger-ui.html)
+5. **Para rodar os testes e ver a cobertura:**
+   ```bash
+   ./mvnw test
+   ```
+   Após a execução, o relatório de cobertura (JaCoCo) estará disponível em:
+   `Descarte-Eletronico/target/site/jacoco/index.html`
 
-## 🏗️ Arquitetura
+A documentação interativa (Swagger) estará disponível em: [http://localhost:8080/swagger-ui.html](http://localhost:8080/swagger-ui.html)
 
-O projeto segue uma arquitetura em camadas clara:
-- **Controller:** Exposição de endpoints e validação de entrada (`@Valid`).
-- **Service:** Regras de negócio, transações e orquestração.
-- **Repository:** Interface de comunicação com o banco de dados.
-- **Mapper:** Conversão eficiente entre Entidades e DTOs usando MapStruct.
+## 📡 Endpoints Existentes
 
-### Entidades Principais
-- **Ponto de Coleta:** Locais onde o descarte pode ser realizado.
-- **Tipo de Produto:** Categorias de eletrônicos aceitos (ex: Baterias, Monitores).
-- **Relato de Problema:** Feedbacks ou avisos de "ponto cheio" enviados por usuários.
-- **Notificação:** Alertas administrativos gerados a partir de novos relatos.
-- **Usuário Admin:** Gestor único do sistema.
-
-## 📡 Endpoints Principais
-
-### Autenticação & Usuário
-- `POST /api/v1/auth/login`: Autentica e retorna o JWT.
-- `GET /api/v1/usuarios/me`: Detalhes do administrador logado.
+### 🔐 Autenticação & Usuário
+- `POST /api/v1/auth/login`: Autentica o administrador e retorna um JWT.
+- `GET /api/v1/usuarios/me`: Busca dados do administrador logado.
 - `PATCH /api/v1/usuarios/me`: Atualiza dados do administrador.
 
-### Tipos de Produto
-- `GET /api/v1/tipos-produto`: Lista tipos ativos (Público).
-- `GET /api/v1/tipos-produto/{id}`: Busca por ID (Público).
-- `POST/PUT/DELETE /api/v1/tipos-produto`: Gestão (Admin).
+### 📦 Tipos de Produto (Categorias)
+- `GET /api/v1/tipos-produto`: Lista todos os tipos ativos (Público).
+- `GET /api/v1/tipos-produto/{id}`: Busca um tipo por ID (Público).
+- `POST /api/v1/tipos-produto`: Cria novo tipo (Admin).
+- `PUT /api/v1/tipos-produto/{id}`: Atualiza um tipo (Admin).
+- `DELETE /api/v1/tipos-produto/{id}`: Remove um tipo (Admin).
 
-### Pontos de Coleta
-- `GET /api/v1/pontos-coleta`: Lista pontos disponíveis (Público).
-- `GET /api/v1/pontos-coleta/{id}`: Detalhes do ponto (Público).
-- `POST /api/v1/pontos-coleta/{id}/relatos-problema`: Envia feedback/aviso (Público).
-- `POST/PUT/DELETE /api/v1/pontos-coleta`: Gestão (Admin).
+### 📍 Pontos de Coleta
+- `GET /api/v1/pontos-coleta`: Lista pontos ativos (Público).
+- `GET /api/v1/pontos-coleta/{id}`: Detalhes de um ponto (Público).
+- `POST /api/v1/pontos-coleta`: Cadastra novo ponto (Admin).
+- `PUT /api/v1/pontos-coleta/{id}`: Atualiza um ponto (Admin).
+- `DELETE /api/v1/pontos-coleta/{id}`: Remove um ponto (Admin).
+- `POST /api/v1/pontos-coleta/{id}/relatos-problema`: Envia aviso de "ponto cheio" ou feedback (Público).
 
-### Administrativo (Relatos e Notificações)
+### ⚠️ Relatos & Notificações (Admin)
 - `GET /api/v1/relatos-problema`: Lista relatos recebidos.
+- `DELETE /api/v1/relatos-problema/{id}`: Remove um relato.
 - `GET /api/v1/notificacoes`: Lista alertas do sistema.
 - `PATCH /api/v1/notificacoes/{id}/visualizar`: Marca alerta como lido.
+- `DELETE /api/v1/notificacoes/{id}`: Remove uma notificação.
 
-## 🧪 Testes
-
-### Unitários
-Executados para Services e Controllers, garantindo o isolamento da lógica:
-```bash
-./mvnw test
-```
-
-### Integração
-Utilizam **Testcontainers** para subir um banco PostgreSQL real durante os testes, garantindo que as migrations e queries JPA estejam corretas. Requer o Docker rodando localmente.
-
-## 🧹 Formatação
-O projeto utiliza o **Google Java Format**. Certifique-se de formatar seu código antes de enviar contribuições.
+### 🧪 Exemplos (Referência)
+- CRUD completo em `/api/v1/exemplos` para fins de padronização de novas funcionalidades.

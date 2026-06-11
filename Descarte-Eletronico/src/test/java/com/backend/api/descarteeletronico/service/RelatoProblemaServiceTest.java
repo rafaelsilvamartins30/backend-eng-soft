@@ -25,13 +25,22 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.ClassOrderer;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestClassOrder;
+import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
+@TestClassOrder(ClassOrderer.OrderAnnotation.class)
+@DisplayName("RelatoProblemaService - Testes de Unidade")
 class RelatoProblemaServiceTest {
 
   @Mock private RelatoProblemaRepository relatoProblemaRepository;
@@ -85,87 +94,118 @@ class RelatoProblemaServiceTest {
                     null);
   }
 
-  @Test
-  void createSavesActiveRelatoCreatesNotificationAndReturnsResponse() {
-    when(pontoColetaRepository.findByIdAndEntityStatus(pontoColetaId, EntityStatus.ACTIVE))
-            .thenReturn(Optional.of(pontoColeta));
-    when(relatoProblemaMapper.toEntity(request)).thenReturn(relato);
-    when(relatoProblemaRepository.saveAndFlush(relato)).thenReturn(relato);
-    when(relatoProblemaMapper.toResponse(relato)).thenReturn(response);
+  @Nested
+  @Order(1)
+  @DisplayName("Operações de Criação")
+  @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+  class CreateTests {
 
-    RelatoProblemaResponse result = relatoProblemaService.create(pontoColetaId, request);
+    @Test
+    @Order(1)
+    @DisplayName("Deve salvar relato ativo, criar notificação e retornar response")
+    void createSavesActiveRelatoCreatesNotificationAndReturnsResponse() {
+      when(pontoColetaRepository.findByIdAndEntityStatus(pontoColetaId, EntityStatus.ACTIVE))
+              .thenReturn(Optional.of(pontoColeta));
+      when(relatoProblemaMapper.toEntity(request)).thenReturn(relato);
+      when(relatoProblemaRepository.saveAndFlush(relato)).thenReturn(relato);
+      when(relatoProblemaMapper.toResponse(relato)).thenReturn(response);
 
-    assertThat(result).isEqualTo(response);
-    assertThat(relato.getPontoColeta()).isEqualTo(pontoColeta);
-    assertThat(relato.getEntityStatus()).isEqualTo(EntityStatus.ACTIVE);
-    assertThat(relato.getDeletedAt()).isNull();
+      RelatoProblemaResponse result = relatoProblemaService.create(pontoColetaId, request);
 
-    verify(pontoColetaRepository).findByIdAndEntityStatus(pontoColetaId, EntityStatus.ACTIVE);
-    verify(relatoProblemaMapper).toEntity(request);
-    verify(relatoProblemaRepository).saveAndFlush(relato);
-    verify(notificacaoService).criarNotificacaoDeRelato(relato);
-    verify(relatoProblemaMapper).toResponse(relato);
-    verifyNoMoreInteractions(
-            pontoColetaRepository, relatoProblemaRepository, relatoProblemaMapper, notificacaoService);
+      assertThat(result).isEqualTo(response);
+      assertThat(relato.getPontoColeta()).isEqualTo(pontoColeta);
+      assertThat(relato.getEntityStatus()).isEqualTo(EntityStatus.ACTIVE);
+      assertThat(relato.getDeletedAt()).isNull();
+
+      verify(pontoColetaRepository).findByIdAndEntityStatus(pontoColetaId, EntityStatus.ACTIVE);
+      verify(relatoProblemaMapper).toEntity(request);
+      verify(relatoProblemaRepository).saveAndFlush(relato);
+      verify(notificacaoService).criarNotificacaoDeRelato(relato);
+      verify(relatoProblemaMapper).toResponse(relato);
+      verifyNoMoreInteractions(
+              pontoColetaRepository, relatoProblemaRepository, relatoProblemaMapper, notificacaoService);
+    }
+
+    @Test
+    @Order(2)
+    @DisplayName("Deve lançar exceção quando ponto de coleta não existir")
+    void createThrowsWhenPontoColetaDoesNotExist() {
+      when(pontoColetaRepository.findByIdAndEntityStatus(pontoColetaId, EntityStatus.ACTIVE))
+              .thenReturn(Optional.empty());
+
+      assertThatThrownBy(() -> relatoProblemaService.create(pontoColetaId, request))
+              .isInstanceOf(ResourceNotFoundException.class)
+              .hasMessage("Ponto de coleta não encontrado");
+
+      verify(pontoColetaRepository).findByIdAndEntityStatus(pontoColetaId, EntityStatus.ACTIVE);
+      verifyNoInteractions(relatoProblemaRepository, relatoProblemaMapper, notificacaoService);
+      verifyNoMoreInteractions(pontoColetaRepository);
+    }
   }
 
-  @Test
-  void createThrowsWhenPontoColetaDoesNotExist() {
-    when(pontoColetaRepository.findByIdAndEntityStatus(pontoColetaId, EntityStatus.ACTIVE))
-            .thenReturn(Optional.empty());
+  @Nested
+  @Order(2)
+  @DisplayName("Busca e Listagem")
+  @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+  class FindTests {
 
-    assertThatThrownBy(() -> relatoProblemaService.create(pontoColetaId, request))
-            .isInstanceOf(ResourceNotFoundException.class)
-            .hasMessage("Ponto de coleta não encontrado");
+    @Test
+    @Order(1)
+    @DisplayName("Deve retornar relatos não excluídos")
+    void findAllReturnsNonDeletedRelatos() {
+      Set<RelatoProblema> relatos = Set.of(relato);
+      Set<RelatoProblemaResponse> responses = Set.of(response);
+      when(relatoProblemaRepository.findAllByEntityStatusNot(EntityStatus.DELETED)).thenReturn(relatos);
+      when(relatoProblemaMapper.toResponseSet(relatos)).thenReturn(responses);
 
-    verify(pontoColetaRepository).findByIdAndEntityStatus(pontoColetaId, EntityStatus.ACTIVE);
-    verifyNoInteractions(relatoProblemaRepository, relatoProblemaMapper, notificacaoService);
-    verifyNoMoreInteractions(pontoColetaRepository);
+      Set<RelatoProblemaResponse> result = relatoProblemaService.findAll();
+
+      assertThat(result).isEqualTo(responses);
+      verify(relatoProblemaRepository).findAllByEntityStatusNot(EntityStatus.DELETED);
+      verify(relatoProblemaMapper).toResponseSet(relatos);
+      verifyNoMoreInteractions(relatoProblemaRepository, relatoProblemaMapper);
+      verifyNoInteractions(pontoColetaRepository, notificacaoService);
+    }
   }
 
-  @Test
-  void findAllReturnsNonDeletedRelatos() {
-    Set<RelatoProblema> relatos = Set.of(relato);
-    Set<RelatoProblemaResponse> responses = Set.of(response);
-    when(relatoProblemaRepository.findAllByEntityStatusNot(EntityStatus.DELETED)).thenReturn(relatos);
-    when(relatoProblemaMapper.toResponseSet(relatos)).thenReturn(responses);
+  @Nested
+  @Order(3)
+  @DisplayName("Operações de Exclusão")
+  @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+  class DeleteTests {
 
-    Set<RelatoProblemaResponse> result = relatoProblemaService.findAll();
+    @Test
+    @Order(1)
+    @DisplayName("Deve marcar relato como excluído")
+    void deleteMarksRelatoAsDeleted() {
+      when(relatoProblemaRepository.findByIdAndEntityStatusNot(id, EntityStatus.DELETED))
+              .thenReturn(Optional.of(relato));
 
-    assertThat(result).isEqualTo(responses);
-    verify(relatoProblemaRepository).findAllByEntityStatusNot(EntityStatus.DELETED);
-    verify(relatoProblemaMapper).toResponseSet(relatos);
-    verifyNoMoreInteractions(relatoProblemaRepository, relatoProblemaMapper);
-    verifyNoInteractions(pontoColetaRepository, notificacaoService);
-  }
+      relatoProblemaService.delete(id);
 
-  @Test
-  void deleteMarksRelatoAsDeleted() {
-    when(relatoProblemaRepository.findByIdAndEntityStatusNot(id, EntityStatus.DELETED))
-            .thenReturn(Optional.of(relato));
+      assertThat(relato.getEntityStatus()).isEqualTo(EntityStatus.DELETED);
+      assertThat(relato.getDeletedAt()).isNotNull();
+      verify(relatoProblemaRepository).findByIdAndEntityStatusNot(id, EntityStatus.DELETED);
+      verify(relatoProblemaRepository).save(relato);
+      verifyNoMoreInteractions(relatoProblemaRepository);
+      verifyNoInteractions(pontoColetaRepository, relatoProblemaMapper, notificacaoService);
+    }
 
-    relatoProblemaService.delete(id);
+    @Test
+    @Order(2)
+    @DisplayName("Deve lançar exceção quando relato não existir")
+    void deleteThrowsWhenRelatoDoesNotExist() {
+      when(relatoProblemaRepository.findByIdAndEntityStatusNot(id, EntityStatus.DELETED))
+              .thenReturn(Optional.empty());
 
-    assertThat(relato.getEntityStatus()).isEqualTo(EntityStatus.DELETED);
-    assertThat(relato.getDeletedAt()).isNotNull();
-    verify(relatoProblemaRepository).findByIdAndEntityStatusNot(id, EntityStatus.DELETED);
-    verify(relatoProblemaRepository).save(relato);
-    verifyNoMoreInteractions(relatoProblemaRepository);
-    verifyNoInteractions(pontoColetaRepository, relatoProblemaMapper, notificacaoService);
-  }
+      assertThatThrownBy(() -> relatoProblemaService.delete(id))
+              .isInstanceOf(ResourceNotFoundException.class)
+              .hasMessage("Relato de problema não encontrado");
 
-  @Test
-  void deleteThrowsWhenRelatoDoesNotExist() {
-    when(relatoProblemaRepository.findByIdAndEntityStatusNot(id, EntityStatus.DELETED))
-            .thenReturn(Optional.empty());
-
-    assertThatThrownBy(() -> relatoProblemaService.delete(id))
-            .isInstanceOf(ResourceNotFoundException.class)
-            .hasMessage("Relato de problema não encontrado");
-
-    verify(relatoProblemaRepository).findByIdAndEntityStatusNot(id, EntityStatus.DELETED);
-    verify(relatoProblemaRepository, never()).save(relato);
-    verifyNoInteractions(pontoColetaRepository, relatoProblemaMapper, notificacaoService);
-    verifyNoMoreInteractions(relatoProblemaRepository);
+      verify(relatoProblemaRepository).findByIdAndEntityStatusNot(id, EntityStatus.DELETED);
+      verify(relatoProblemaRepository, never()).save(relato);
+      verifyNoInteractions(pontoColetaRepository, relatoProblemaMapper, notificacaoService);
+      verifyNoMoreInteractions(relatoProblemaRepository);
+    }
   }
 }

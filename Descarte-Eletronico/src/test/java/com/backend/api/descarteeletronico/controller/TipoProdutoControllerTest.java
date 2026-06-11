@@ -24,11 +24,19 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.ClassOrderer;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestClassOrder;
+import org.junit.jupiter.api.TestMethodOrder;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
+@TestClassOrder(ClassOrderer.OrderAnnotation.class)
 class TipoProdutoControllerTest {
 
   private MockMvc mockMvc;
@@ -61,206 +69,248 @@ class TipoProdutoControllerTest {
             null);
   }
 
-  @Test
-  void createReturnsCreatedResponse() throws Exception {
-    when(tipoProdutoService.create(request)).thenReturn(response);
+  @Nested
+  @Order(1)
+  @DisplayName("Cenários de Cadastro")
+  @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+  class Cadastro {
 
-    mockMvc
-        .perform(
-            post("/api/v1/tipos-produto")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request)))
-        .andExpect(status().isCreated())
-        .andExpect(jsonPath("$.id").value(id.toString()))
-        .andExpect(jsonPath("$.nome").value(request.nome()));
+    @Test
+    @Order(1)
+    void createReturnsCreatedResponse() throws Exception {
+      when(tipoProdutoService.create(request)).thenReturn(response);
 
-    verify(tipoProdutoService).create(request);
-    verifyNoMoreInteractions(tipoProdutoService);
+      mockMvc
+          .perform(
+              post("/api/v1/tipos-produto")
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content(objectMapper.writeValueAsString(request)))
+          .andExpect(status().isCreated())
+          .andExpect(jsonPath("$.id").value(id.toString()))
+          .andExpect(jsonPath("$.nome").value(request.nome()));
+
+      verify(tipoProdutoService).create(request);
+      verifyNoMoreInteractions(tipoProdutoService);
+    }
+
+    @Test
+    @Order(2)
+    void createReturnsBadRequestWhenPayloadIsInvalid() throws Exception {
+      TipoProdutoRequest invalidRequest = new TipoProdutoRequest("", "");
+
+      mockMvc
+          .perform(
+              post("/api/v1/tipos-produto")
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content(objectMapper.writeValueAsString(invalidRequest)))
+          .andExpect(status().isBadRequest())
+          .andExpect(jsonPath("$.message").value("Dados de entrada inválidos"));
+
+      verifyNoInteractions(tipoProdutoService);
+    }
+
+    @Test
+    @Order(3)
+    void createReturnsBadRequestWhenPayloadIsTooLarge() throws Exception {
+      TipoProdutoRequest invalidRequest = new TipoProdutoRequest("A".repeat(101), "B".repeat(501));
+
+      mockMvc
+          .perform(
+              post("/api/v1/tipos-produto")
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content(objectMapper.writeValueAsString(invalidRequest)))
+          .andExpect(status().isBadRequest())
+          .andExpect(jsonPath("$.details").isArray());
+
+      verifyNoInteractions(tipoProdutoService);
+    }
+
+    @Test
+    @Order(4)
+    void createReturnsBadRequestWhenServiceThrowsBusinessException() throws Exception {
+      when(tipoProdutoService.create(request)).thenThrow(new BusinessException("Regra inválida"));
+
+      mockMvc
+          .perform(
+              post("/api/v1/tipos-produto")
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content(objectMapper.writeValueAsString(request)))
+          .andExpect(status().isBadRequest())
+          .andExpect(jsonPath("$.message").value("Regra inválida"))
+          .andExpect(jsonPath("$.path").value("/api/v1/tipos-produto"));
+
+      verify(tipoProdutoService).create(request);
+      verifyNoMoreInteractions(tipoProdutoService);
+    }
   }
 
-  @Test
-  void createReturnsBadRequestWhenPayloadIsInvalid() throws Exception {
-    TipoProdutoRequest invalidRequest = new TipoProdutoRequest("", "");
+  @Nested
+  @Order(2)
+  @DisplayName("Cenários de Consulta")
+  @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+  class Consulta {
 
-    mockMvc
-        .perform(
-            post("/api/v1/tipos-produto")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(invalidRequest)))
-        .andExpect(status().isBadRequest())
-        .andExpect(jsonPath("$.message").value("Dados de entrada inválidos"));
+    @Test
+    @Order(1)
+    void findByIdReturnsOkResponse() throws Exception {
+      when(tipoProdutoService.findById(id)).thenReturn(response);
 
-    verifyNoInteractions(tipoProdutoService);
+      mockMvc
+          .perform(get("/api/v1/tipos-produto/{id}", id))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$.id").value(id.toString()));
+
+      verify(tipoProdutoService).findById(id);
+      verifyNoMoreInteractions(tipoProdutoService);
+    }
+
+    @Test
+    @Order(2)
+    void findByIdReturnsNotFoundWhenServiceThrows() throws Exception {
+      when(tipoProdutoService.findById(id))
+          .thenThrow(new ResourceNotFoundException("Tipo de produto não encontrado"));
+
+      mockMvc
+          .perform(get("/api/v1/tipos-produto/{id}", id))
+          .andExpect(status().isNotFound())
+          .andExpect(jsonPath("$.message").value("Tipo de produto não encontrado"));
+
+      verify(tipoProdutoService).findById(id);
+      verifyNoMoreInteractions(tipoProdutoService);
+    }
+
+    @Test
+    @Order(3)
+    void findAllReturnsOkResponse() throws Exception {
+      when(tipoProdutoService.findAll()).thenReturn(Set.of(response));
+
+      mockMvc
+          .perform(get("/api/v1/tipos-produto"))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$[0].id").value(id.toString()));
+
+      verify(tipoProdutoService).findAll();
+      verifyNoMoreInteractions(tipoProdutoService);
+    }
+
+    @Test
+    @Order(4)
+    void findAllReturnsEmptyListWhenThereAreNoActiveEntities() throws Exception {
+      when(tipoProdutoService.findAll()).thenReturn(Set.of());
+
+      mockMvc
+          .perform(get("/api/v1/tipos-produto"))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$").isArray())
+          .andExpect(jsonPath("$").isEmpty());
+
+      verify(tipoProdutoService).findAll();
+      verifyNoMoreInteractions(tipoProdutoService);
+    }
+
+    @Test
+    @Order(5)
+    void findAllReturnsInternalServerErrorWhenServiceThrowsUnexpectedException() throws Exception {
+      when(tipoProdutoService.findAll()).thenThrow(new IllegalStateException("Falha inesperada"));
+
+      mockMvc
+          .perform(get("/api/v1/tipos-produto"))
+          .andExpect(status().isInternalServerError())
+          .andExpect(jsonPath("$.message").value("Erro interno inesperado"))
+          .andExpect(jsonPath("$.path").value("/api/v1/tipos-produto"));
+
+      verify(tipoProdutoService).findAll();
+      verifyNoMoreInteractions(tipoProdutoService);
+    }
   }
 
-  @Test
-  void createReturnsBadRequestWhenPayloadIsTooLarge() throws Exception {
-    TipoProdutoRequest invalidRequest = new TipoProdutoRequest("A".repeat(101), "B".repeat(501));
+  @Nested
+  @Order(3)
+  @DisplayName("Cenários de Atualização")
+  @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+  class Atualizacao {
 
-    mockMvc
-        .perform(
-            post("/api/v1/tipos-produto")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(invalidRequest)))
-        .andExpect(status().isBadRequest())
-        .andExpect(jsonPath("$.details").isArray());
+    @Test
+    @Order(1)
+    void updateReturnsOkResponse() throws Exception {
+      when(tipoProdutoService.update(id, request)).thenReturn(response);
 
-    verifyNoInteractions(tipoProdutoService);
+      mockMvc
+          .perform(
+              put("/api/v1/tipos-produto/{id}", id)
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content(objectMapper.writeValueAsString(request)))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$.id").value(id.toString()));
+
+      verify(tipoProdutoService).update(id, request);
+      verifyNoMoreInteractions(tipoProdutoService);
+    }
+
+    @Test
+    @Order(2)
+    void updateReturnsBadRequestWhenPayloadIsInvalid() throws Exception {
+      TipoProdutoRequest invalidRequest = new TipoProdutoRequest("", "");
+
+      mockMvc
+          .perform(
+              put("/api/v1/tipos-produto/{id}", id)
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content(objectMapper.writeValueAsString(invalidRequest)))
+          .andExpect(status().isBadRequest())
+          .andExpect(jsonPath("$.message").value("Dados de entrada inválidos"));
+
+      verifyNoInteractions(tipoProdutoService);
+    }
+
+    @Test
+    @Order(3)
+    void updateReturnsNotFoundWhenServiceThrows() throws Exception {
+      when(tipoProdutoService.update(id, request))
+          .thenThrow(new ResourceNotFoundException("Tipo de produto não encontrado"));
+
+      mockMvc
+          .perform(
+              put("/api/v1/tipos-produto/{id}", id)
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content(objectMapper.writeValueAsString(request)))
+          .andExpect(status().isNotFound())
+          .andExpect(jsonPath("$.message").value("Tipo de produto não encontrado"));
+
+      verify(tipoProdutoService).update(id, request);
+      verifyNoMoreInteractions(tipoProdutoService);
+    }
   }
 
-  @Test
-  void createReturnsBadRequestWhenServiceThrowsBusinessException() throws Exception {
-    when(tipoProdutoService.create(request)).thenThrow(new BusinessException("Regra inválida"));
+  @Nested
+  @Order(4)
+  @DisplayName("Cenários de Exclusão")
+  @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+  class Exclusao {
 
-    mockMvc
-        .perform(
-            post("/api/v1/tipos-produto")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request)))
-        .andExpect(status().isBadRequest())
-        .andExpect(jsonPath("$.message").value("Regra inválida"))
-        .andExpect(jsonPath("$.path").value("/api/v1/tipos-produto"));
+    @Test
+    @Order(1)
+    void deleteReturnsNoContent() throws Exception {
+      mockMvc.perform(delete("/api/v1/tipos-produto/{id}", id)).andExpect(status().isNoContent());
 
-    verify(tipoProdutoService).create(request);
-    verifyNoMoreInteractions(tipoProdutoService);
-  }
+      verify(tipoProdutoService).delete(id);
+      verifyNoMoreInteractions(tipoProdutoService);
+    }
 
-  @Test
-  void findByIdReturnsOkResponse() throws Exception {
-    when(tipoProdutoService.findById(id)).thenReturn(response);
+    @Test
+    @Order(2)
+    void deleteReturnsNotFoundWhenServiceThrows() throws Exception {
+      doThrow(new ResourceNotFoundException("Tipo de produto não encontrado"))
+          .when(tipoProdutoService)
+          .delete(id);
 
-    mockMvc
-        .perform(get("/api/v1/tipos-produto/{id}", id))
-        .andExpect(status().isOk())
-        .andExpect(jsonPath("$.id").value(id.toString()));
+      mockMvc
+          .perform(delete("/api/v1/tipos-produto/{id}", id))
+          .andExpect(status().isNotFound())
+          .andExpect(jsonPath("$.message").value("Tipo de produto não encontrado"));
 
-    verify(tipoProdutoService).findById(id);
-    verifyNoMoreInteractions(tipoProdutoService);
-  }
-
-  @Test
-  void findByIdReturnsNotFoundWhenServiceThrows() throws Exception {
-    when(tipoProdutoService.findById(id))
-        .thenThrow(new ResourceNotFoundException("Tipo de produto não encontrado"));
-
-    mockMvc
-        .perform(get("/api/v1/tipos-produto/{id}", id))
-        .andExpect(status().isNotFound())
-        .andExpect(jsonPath("$.message").value("Tipo de produto não encontrado"));
-
-    verify(tipoProdutoService).findById(id);
-    verifyNoMoreInteractions(tipoProdutoService);
-  }
-
-  @Test
-  void findAllReturnsOkResponse() throws Exception {
-    when(tipoProdutoService.findAll()).thenReturn(Set.of(response));
-
-    mockMvc
-        .perform(get("/api/v1/tipos-produto"))
-        .andExpect(status().isOk())
-        .andExpect(jsonPath("$[0].id").value(id.toString()));
-
-    verify(tipoProdutoService).findAll();
-    verifyNoMoreInteractions(tipoProdutoService);
-  }
-
-  @Test
-  void findAllReturnsEmptyListWhenThereAreNoActiveEntities() throws Exception {
-    when(tipoProdutoService.findAll()).thenReturn(Set.of());
-
-    mockMvc
-        .perform(get("/api/v1/tipos-produto"))
-        .andExpect(status().isOk())
-        .andExpect(jsonPath("$").isArray())
-        .andExpect(jsonPath("$").isEmpty());
-
-    verify(tipoProdutoService).findAll();
-    verifyNoMoreInteractions(tipoProdutoService);
-  }
-
-  @Test
-  void findAllReturnsInternalServerErrorWhenServiceThrowsUnexpectedException() throws Exception {
-    when(tipoProdutoService.findAll()).thenThrow(new IllegalStateException("Falha inesperada"));
-
-    mockMvc
-        .perform(get("/api/v1/tipos-produto"))
-        .andExpect(status().isInternalServerError())
-        .andExpect(jsonPath("$.message").value("Erro interno inesperado"))
-        .andExpect(jsonPath("$.path").value("/api/v1/tipos-produto"));
-
-    verify(tipoProdutoService).findAll();
-    verifyNoMoreInteractions(tipoProdutoService);
-  }
-
-  @Test
-  void updateReturnsOkResponse() throws Exception {
-    when(tipoProdutoService.update(id, request)).thenReturn(response);
-
-    mockMvc
-        .perform(
-            put("/api/v1/tipos-produto/{id}", id)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request)))
-        .andExpect(status().isOk())
-        .andExpect(jsonPath("$.id").value(id.toString()));
-
-    verify(tipoProdutoService).update(id, request);
-    verifyNoMoreInteractions(tipoProdutoService);
-  }
-
-  @Test
-  void updateReturnsBadRequestWhenPayloadIsInvalid() throws Exception {
-    TipoProdutoRequest invalidRequest = new TipoProdutoRequest("", "");
-
-    mockMvc
-        .perform(
-            put("/api/v1/tipos-produto/{id}", id)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(invalidRequest)))
-        .andExpect(status().isBadRequest())
-        .andExpect(jsonPath("$.message").value("Dados de entrada inválidos"));
-
-    verifyNoInteractions(tipoProdutoService);
-  }
-
-  @Test
-  void updateReturnsNotFoundWhenServiceThrows() throws Exception {
-    when(tipoProdutoService.update(id, request))
-        .thenThrow(new ResourceNotFoundException("Tipo de produto não encontrado"));
-
-    mockMvc
-        .perform(
-            put("/api/v1/tipos-produto/{id}", id)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request)))
-        .andExpect(status().isNotFound())
-        .andExpect(jsonPath("$.message").value("Tipo de produto não encontrado"));
-
-    verify(tipoProdutoService).update(id, request);
-    verifyNoMoreInteractions(tipoProdutoService);
-  }
-
-  @Test
-  void deleteReturnsNoContent() throws Exception {
-    mockMvc.perform(delete("/api/v1/tipos-produto/{id}", id)).andExpect(status().isNoContent());
-
-    verify(tipoProdutoService).delete(id);
-    verifyNoMoreInteractions(tipoProdutoService);
-  }
-
-  @Test
-  void deleteReturnsNotFoundWhenServiceThrows() throws Exception {
-    doThrow(new ResourceNotFoundException("Tipo de produto não encontrado"))
-        .when(tipoProdutoService)
-        .delete(id);
-
-    mockMvc
-        .perform(delete("/api/v1/tipos-produto/{id}", id))
-        .andExpect(status().isNotFound())
-        .andExpect(jsonPath("$.message").value("Tipo de produto não encontrado"));
-
-    verify(tipoProdutoService).delete(id);
-    verifyNoMoreInteractions(tipoProdutoService);
+      verify(tipoProdutoService).delete(id);
+      verifyNoMoreInteractions(tipoProdutoService);
+    }
   }
 }

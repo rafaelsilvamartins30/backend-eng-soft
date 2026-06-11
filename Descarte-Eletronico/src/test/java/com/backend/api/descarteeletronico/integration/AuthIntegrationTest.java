@@ -5,34 +5,49 @@ import static org.hamcrest.Matchers.notNullValue;
 
 import com.backend.api.descarteeletronico.model.auth.dto.LoginRequest;
 import io.restassured.http.ContentType;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 
+@TestClassOrder(ClassOrderer.OrderAnnotation.class)
 class AuthIntegrationTest extends BaseIntegrationTest {
 
-  @Test
-  void loginWithDefaultAdminReturnsToken() {
-    LoginRequest loginRequest = new LoginRequest("admin@descarte.local", "Admin@123");
+  @Nested
+  @Order(1)
+  @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+  class FluxosDeSucesso {
 
-    given()
-        .contentType(ContentType.JSON)
-        .body(loginRequest)
-    .when()
-        .post("/api/v1/auth/login")
-    .then()
-        .statusCode(200)
-        .body("accessToken", notNullValue());
+    @Test
+    @Order(1)
+    void loginWithDefaultAdminReturnsToken() {
+      LoginRequest loginRequest = new LoginRequest("admin@descarte.local", "Admin@123");
+
+      given()
+          .contentType(ContentType.JSON)
+          .body(loginRequest)
+      .when()
+          .post("/api/v1/auth/login")
+      .then()
+          .statusCode(200)
+          .body("accessToken", notNullValue());
+    }
   }
 
-  @Test
-  void loginWithInvalidCredentialsReturnsUnauthorized() {
-    LoginRequest loginRequest = new LoginRequest("wrong@email.com", "wrongpass");
+  @Nested
+  @Order(2)
+  @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+  class CenariosDeErroSeguranca {
 
-    given()
-        .contentType(ContentType.JSON)
-        .body(loginRequest)
-    .when()
-        .post("/api/v1/auth/login")
-    .then()
-        .statusCode(401);
+    @Test
+    @Order(1)
+    void loginWithInvalidCredentialsReturnsUnauthorized() {
+      LoginRequest loginRequest = new LoginRequest("wrong@email.com", "wrongpass");
+
+      given()
+          .contentType(ContentType.JSON)
+          .body(loginRequest)
+      .when()
+          .post("/api/v1/auth/login")
+      .then()
+          .statusCode(401);
+    }
   }
 }

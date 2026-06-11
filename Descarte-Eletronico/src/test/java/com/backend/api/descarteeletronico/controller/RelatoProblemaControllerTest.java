@@ -19,10 +19,18 @@ import com.backend.api.descarteeletronico.service.RelatoProblemaService;
 import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.ClassOrderer;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestClassOrder;
+import org.junit.jupiter.api.TestMethodOrder;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
+@TestClassOrder(ClassOrderer.OrderAnnotation.class)
 class RelatoProblemaControllerTest {
 
   private MockMvc mockMvc;
@@ -55,52 +63,70 @@ class RelatoProblemaControllerTest {
                     null);
   }
 
-  @Test
-  void findAllReturnsOkResponse() throws Exception {
-    when(relatoProblemaService.findAll()).thenReturn(Set.of(response));
+  @Nested
+  @Order(2)
+  @DisplayName("Cenários de Consulta")
+  @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+  class ConsultaTests {
 
-    mockMvc
-            .perform(get("/api/v1/relatos-problema"))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$[0].id").value(id.toString()));
+    @Test
+    @Order(1)
+    void findAllReturnsOkResponse() throws Exception {
+      when(relatoProblemaService.findAll()).thenReturn(Set.of(response));
 
-    verify(relatoProblemaService).findAll();
-    verifyNoMoreInteractions(relatoProblemaService);
+      mockMvc
+              .perform(get("/api/v1/relatos-problema"))
+              .andExpect(status().isOk())
+              .andExpect(jsonPath("$[0].id").value(id.toString()));
+
+      verify(relatoProblemaService).findAll();
+      verifyNoMoreInteractions(relatoProblemaService);
+    }
+
+    @Test
+    @Order(2)
+    void findByIdReturnsOkResponse() throws Exception {
+      when(relatoProblemaService.findById(id)).thenReturn(response);
+
+      mockMvc
+              .perform(get("/api/v1/relatos-problema/{id}", id))
+              .andExpect(status().isOk())
+              .andExpect(jsonPath("$.id").value(id.toString()));
+
+      verify(relatoProblemaService).findById(id);
+      verifyNoMoreInteractions(relatoProblemaService);
+    }
   }
 
-  @Test
-  void findByIdReturnsOkResponse() throws Exception {
-    when(relatoProblemaService.findById(id)).thenReturn(response);
+  @Nested
+  @Order(4)
+  @DisplayName("Cenários de Exclusão")
+  @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+  class ExclusaoTests {
 
-    mockMvc
-            .perform(get("/api/v1/relatos-problema/{id}", id))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$.id").value(id.toString()));
+    @Test
+    @Order(1)
+    void deleteReturnsNoContent() throws Exception {
+      mockMvc.perform(delete("/api/v1/relatos-problema/{id}", id)).andExpect(status().isNoContent());
 
-    verify(relatoProblemaService).findById(id);
-    verifyNoMoreInteractions(relatoProblemaService);
-  }
+      verify(relatoProblemaService).delete(id);
+      verifyNoMoreInteractions(relatoProblemaService);
+    }
 
-  @Test
-  void deleteReturnsNoContent() throws Exception {
-    mockMvc.perform(delete("/api/v1/relatos-problema/{id}", id)).andExpect(status().isNoContent());
+    @Test
+    @Order(2)
+    void deleteReturnsNotFoundWhenServiceThrows() throws Exception {
+      doThrow(new ResourceNotFoundException("Relato de problema não encontrado"))
+              .when(relatoProblemaService)
+              .delete(id);
 
-    verify(relatoProblemaService).delete(id);
-    verifyNoMoreInteractions(relatoProblemaService);
-  }
+      mockMvc
+              .perform(delete("/api/v1/relatos-problema/{id}", id))
+              .andExpect(status().isNotFound())
+              .andExpect(jsonPath("$.message").value("Relato de problema não encontrado"));
 
-  @Test
-  void deleteReturnsNotFoundWhenServiceThrows() throws Exception {
-    doThrow(new ResourceNotFoundException("Relato de problema não encontrado"))
-            .when(relatoProblemaService)
-            .delete(id);
-
-    mockMvc
-            .perform(delete("/api/v1/relatos-problema/{id}", id))
-            .andExpect(status().isNotFound())
-            .andExpect(jsonPath("$.message").value("Relato de problema não encontrado"));
-
-    verify(relatoProblemaService).delete(id);
-    verifyNoMoreInteractions(relatoProblemaService);
+      verify(relatoProblemaService).delete(id);
+      verifyNoMoreInteractions(relatoProblemaService);
+    }
   }
 }

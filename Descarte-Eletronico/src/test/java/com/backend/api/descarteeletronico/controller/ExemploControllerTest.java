@@ -24,11 +24,19 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.ClassOrderer;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestClassOrder;
+import org.junit.jupiter.api.TestMethodOrder;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
+@TestClassOrder(ClassOrderer.OrderAnnotation.class)
 class ExemploControllerTest {
 
   private MockMvc mockMvc;
@@ -54,196 +62,237 @@ class ExemploControllerTest {
             id, request.nome(), request.descricao(), 0L, null, null, EntityStatus.ACTIVE, null);
   }
 
-  @Test
-  void createReturnsCreatedResponse() throws Exception {
-    when(exemploService.create(request)).thenReturn(response);
+  @Nested
+  @Order(1)
+  @DisplayName("Cenários de Cadastro")
+  @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+  class CadastroTests {
 
-    mockMvc
-        .perform(
-            post("/api/v1/exemplos")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request)))
-        .andExpect(status().isCreated())
-        .andExpect(jsonPath("$.id").value(id.toString()))
-        .andExpect(jsonPath("$.nome").value(request.nome()))
-        .andExpect(jsonPath("$.descricao").value(request.descricao()));
+    @Test
+    @Order(1)
+    void createReturnsCreatedResponse() throws Exception {
+      when(exemploService.create(request)).thenReturn(response);
 
-    verify(exemploService).create(request);
-    verifyNoMoreInteractions(exemploService);
+      mockMvc
+          .perform(
+              post("/api/v1/exemplos")
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content(objectMapper.writeValueAsString(request)))
+          .andExpect(status().isCreated())
+          .andExpect(jsonPath("$.id").value(id.toString()))
+          .andExpect(jsonPath("$.nome").value(request.nome()))
+          .andExpect(jsonPath("$.descricao").value(request.descricao()));
+
+      verify(exemploService).create(request);
+      verifyNoMoreInteractions(exemploService);
+    }
+
+    @Test
+    @Order(2)
+    void createReturnsBadRequestWhenPayloadIsInvalid() throws Exception {
+      ExemploRequest invalidRequest = new ExemploRequest("", "");
+
+      mockMvc
+          .perform(
+              post("/api/v1/exemplos")
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content(objectMapper.writeValueAsString(invalidRequest)))
+          .andExpect(status().isBadRequest())
+          .andExpect(jsonPath("$.message").value("Dados de entrada inválidos"))
+          .andExpect(jsonPath("$.details").isArray());
+
+      verifyNoInteractions(exemploService);
+    }
+
+    @Test
+    @Order(3)
+    void createReturnsBadRequestWhenServiceThrowsBusinessException() throws Exception {
+      when(exemploService.create(request))
+          .thenThrow(new BusinessException("Regra de negócio inválida"));
+
+      mockMvc
+          .perform(
+              post("/api/v1/exemplos")
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content(objectMapper.writeValueAsString(request)))
+          .andExpect(status().isBadRequest())
+          .andExpect(jsonPath("$.message").value("Regra de negócio inválida"))
+          .andExpect(jsonPath("$.path").value("/api/v1/exemplos"));
+
+      verify(exemploService).create(request);
+      verifyNoMoreInteractions(exemploService);
+    }
   }
 
-  @Test
-  void createReturnsBadRequestWhenPayloadIsInvalid() throws Exception {
-    ExemploRequest invalidRequest = new ExemploRequest("", "");
+  @Nested
+  @Order(2)
+  @DisplayName("Cenários de Consulta")
+  @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+  class ConsultaTests {
 
-    mockMvc
-        .perform(
-            post("/api/v1/exemplos")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(invalidRequest)))
-        .andExpect(status().isBadRequest())
-        .andExpect(jsonPath("$.message").value("Dados de entrada inválidos"))
-        .andExpect(jsonPath("$.details").isArray());
+    @Test
+    @Order(1)
+    void findByIdReturnsOkResponse() throws Exception {
+      when(exemploService.findById(id)).thenReturn(response);
 
-    verifyNoInteractions(exemploService);
+      mockMvc
+          .perform(get("/api/v1/exemplos/{id}", id))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$.id").value(id.toString()));
+
+      verify(exemploService).findById(id);
+      verifyNoMoreInteractions(exemploService);
+    }
+
+    @Test
+    @Order(2)
+    void findByIdReturnsNotFoundWhenServiceThrows() throws Exception {
+      when(exemploService.findById(id))
+          .thenThrow(new ResourceNotFoundException("Exemplo não encontrado"));
+
+      mockMvc
+          .perform(get("/api/v1/exemplos/{id}", id))
+          .andExpect(status().isNotFound())
+          .andExpect(jsonPath("$.message").value("Exemplo não encontrado"));
+
+      verify(exemploService).findById(id);
+      verifyNoMoreInteractions(exemploService);
+    }
+
+    @Test
+    @Order(3)
+    void findAllReturnsOkResponse() throws Exception {
+      when(exemploService.findAll()).thenReturn(Set.of(response));
+
+      mockMvc
+          .perform(get("/api/v1/exemplos"))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$[0].id").value(id.toString()));
+
+      verify(exemploService).findAll();
+      verifyNoMoreInteractions(exemploService);
+    }
+
+    @Test
+    @Order(4)
+    void findAllReturnsEmptyListWhenThereAreNoActiveEntities() throws Exception {
+      when(exemploService.findAll()).thenReturn(Set.of());
+
+      mockMvc
+          .perform(get("/api/v1/exemplos"))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$").isArray())
+          .andExpect(jsonPath("$").isEmpty());
+
+      verify(exemploService).findAll();
+      verifyNoMoreInteractions(exemploService);
+    }
+
+    @Test
+    @Order(5)
+    void findAllReturnsInternalServerErrorWhenServiceThrowsUnexpectedException() throws Exception {
+      when(exemploService.findAll()).thenThrow(new IllegalStateException("Falha inesperada"));
+
+      mockMvc
+          .perform(get("/api/v1/exemplos"))
+          .andExpect(status().isInternalServerError())
+          .andExpect(jsonPath("$.message").value("Erro interno inesperado"))
+          .andExpect(jsonPath("$.path").value("/api/v1/exemplos"));
+
+      verify(exemploService).findAll();
+      verifyNoMoreInteractions(exemploService);
+    }
   }
 
-  @Test
-  void createReturnsBadRequestWhenServiceThrowsBusinessException() throws Exception {
-    when(exemploService.create(request))
-        .thenThrow(new BusinessException("Regra de negócio inválida"));
+  @Nested
+  @Order(3)
+  @DisplayName("Cenários de Atualização")
+  @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+  class AtualizacaoTests {
 
-    mockMvc
-        .perform(
-            post("/api/v1/exemplos")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request)))
-        .andExpect(status().isBadRequest())
-        .andExpect(jsonPath("$.message").value("Regra de negócio inválida"))
-        .andExpect(jsonPath("$.path").value("/api/v1/exemplos"));
+    @Test
+    @Order(1)
+    void updateReturnsOkResponse() throws Exception {
+      when(exemploService.update(id, request)).thenReturn(response);
 
-    verify(exemploService).create(request);
-    verifyNoMoreInteractions(exemploService);
+      mockMvc
+          .perform(
+              put("/api/v1/exemplos/{id}", id)
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content(objectMapper.writeValueAsString(request)))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$.id").value(id.toString()))
+          .andExpect(jsonPath("$.nome").value(request.nome()));
+
+      verify(exemploService).update(id, request);
+      verifyNoMoreInteractions(exemploService);
+    }
+
+    @Test
+    @Order(2)
+    void updateReturnsNotFoundWhenServiceThrows() throws Exception {
+      when(exemploService.update(id, request))
+          .thenThrow(new ResourceNotFoundException("Exemplo não encontrado"));
+
+      mockMvc
+          .perform(
+              put("/api/v1/exemplos/{id}", id)
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content(objectMapper.writeValueAsString(request)))
+          .andExpect(status().isNotFound())
+          .andExpect(jsonPath("$.message").value("Exemplo não encontrado"));
+
+      verify(exemploService).update(id, request);
+      verifyNoMoreInteractions(exemploService);
+    }
+
+    @Test
+    @Order(3)
+    void updateReturnsBadRequestWhenPayloadIsInvalid() throws Exception {
+      ExemploRequest invalidRequest = new ExemploRequest("", "");
+
+      mockMvc
+          .perform(
+              put("/api/v1/exemplos/{id}", id)
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content(objectMapper.writeValueAsString(invalidRequest)))
+          .andExpect(status().isBadRequest())
+          .andExpect(jsonPath("$.details").isArray())
+          .andExpect(jsonPath("$.details[0]", containsString("obrigat")));
+
+      verifyNoInteractions(exemploService);
+    }
   }
 
-  @Test
-  void findByIdReturnsOkResponse() throws Exception {
-    when(exemploService.findById(id)).thenReturn(response);
+  @Nested
+  @Order(4)
+  @DisplayName("Cenários de Exclusão")
+  @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+  class ExclusaoTests {
 
-    mockMvc
-        .perform(get("/api/v1/exemplos/{id}", id))
-        .andExpect(status().isOk())
-        .andExpect(jsonPath("$.id").value(id.toString()));
+    @Test
+    @Order(1)
+    void deleteReturnsNoContent() throws Exception {
+      mockMvc.perform(delete("/api/v1/exemplos/{id}", id)).andExpect(status().isNoContent());
 
-    verify(exemploService).findById(id);
-    verifyNoMoreInteractions(exemploService);
-  }
+      verify(exemploService).delete(id);
+      verifyNoMoreInteractions(exemploService);
+    }
 
-  @Test
-  void findByIdReturnsNotFoundWhenServiceThrows() throws Exception {
-    when(exemploService.findById(id))
-        .thenThrow(new ResourceNotFoundException("Exemplo não encontrado"));
+    @Test
+    @Order(2)
+    void deleteReturnsNotFoundWhenServiceThrows() throws Exception {
+      org.mockito.Mockito.doThrow(new ResourceNotFoundException("Exemplo não encontrado"))
+          .when(exemploService)
+          .delete(id);
 
-    mockMvc
-        .perform(get("/api/v1/exemplos/{id}", id))
-        .andExpect(status().isNotFound())
-        .andExpect(jsonPath("$.message").value("Exemplo não encontrado"));
+      mockMvc
+          .perform(delete("/api/v1/exemplos/{id}", id))
+          .andExpect(status().isNotFound())
+          .andExpect(jsonPath("$.message").value("Exemplo não encontrado"));
 
-    verify(exemploService).findById(id);
-    verifyNoMoreInteractions(exemploService);
-  }
-
-  @Test
-  void findAllReturnsOkResponse() throws Exception {
-    when(exemploService.findAll()).thenReturn(Set.of(response));
-
-    mockMvc
-        .perform(get("/api/v1/exemplos"))
-        .andExpect(status().isOk())
-        .andExpect(jsonPath("$[0].id").value(id.toString()));
-
-    verify(exemploService).findAll();
-    verifyNoMoreInteractions(exemploService);
-  }
-
-  @Test
-  void findAllReturnsEmptyListWhenThereAreNoActiveEntities() throws Exception {
-    when(exemploService.findAll()).thenReturn(Set.of());
-
-    mockMvc
-        .perform(get("/api/v1/exemplos"))
-        .andExpect(status().isOk())
-        .andExpect(jsonPath("$").isArray())
-        .andExpect(jsonPath("$").isEmpty());
-
-    verify(exemploService).findAll();
-    verifyNoMoreInteractions(exemploService);
-  }
-
-  @Test
-  void findAllReturnsInternalServerErrorWhenServiceThrowsUnexpectedException() throws Exception {
-    when(exemploService.findAll()).thenThrow(new IllegalStateException("Falha inesperada"));
-
-    mockMvc
-        .perform(get("/api/v1/exemplos"))
-        .andExpect(status().isInternalServerError())
-        .andExpect(jsonPath("$.message").value("Erro interno inesperado"))
-        .andExpect(jsonPath("$.path").value("/api/v1/exemplos"));
-
-    verify(exemploService).findAll();
-    verifyNoMoreInteractions(exemploService);
-  }
-
-  @Test
-  void updateReturnsOkResponse() throws Exception {
-    when(exemploService.update(id, request)).thenReturn(response);
-
-    mockMvc
-        .perform(
-            put("/api/v1/exemplos/{id}", id)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request)))
-        .andExpect(status().isOk())
-        .andExpect(jsonPath("$.id").value(id.toString()))
-        .andExpect(jsonPath("$.nome").value(request.nome()));
-
-    verify(exemploService).update(id, request);
-    verifyNoMoreInteractions(exemploService);
-  }
-
-  @Test
-  void updateReturnsNotFoundWhenServiceThrows() throws Exception {
-    when(exemploService.update(id, request))
-        .thenThrow(new ResourceNotFoundException("Exemplo não encontrado"));
-
-    mockMvc
-        .perform(
-            put("/api/v1/exemplos/{id}", id)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request)))
-        .andExpect(status().isNotFound())
-        .andExpect(jsonPath("$.message").value("Exemplo não encontrado"));
-
-    verify(exemploService).update(id, request);
-    verifyNoMoreInteractions(exemploService);
-  }
-
-  @Test
-  void updateReturnsBadRequestWhenPayloadIsInvalid() throws Exception {
-    ExemploRequest invalidRequest = new ExemploRequest("", "");
-
-    mockMvc
-        .perform(
-            put("/api/v1/exemplos/{id}", id)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(invalidRequest)))
-        .andExpect(status().isBadRequest())
-        .andExpect(jsonPath("$.details").isArray())
-        .andExpect(jsonPath("$.details[0]", containsString("obrigat")));
-
-    verifyNoInteractions(exemploService);
-  }
-
-  @Test
-  void deleteReturnsNoContent() throws Exception {
-    mockMvc.perform(delete("/api/v1/exemplos/{id}", id)).andExpect(status().isNoContent());
-
-    verify(exemploService).delete(id);
-    verifyNoMoreInteractions(exemploService);
-  }
-
-  @Test
-  void deleteReturnsNotFoundWhenServiceThrows() throws Exception {
-    org.mockito.Mockito.doThrow(new ResourceNotFoundException("Exemplo não encontrado"))
-        .when(exemploService)
-        .delete(id);
-
-    mockMvc
-        .perform(delete("/api/v1/exemplos/{id}", id))
-        .andExpect(status().isNotFound())
-        .andExpect(jsonPath("$.message").value("Exemplo não encontrado"));
-
-    verify(exemploService).delete(id);
-    verifyNoMoreInteractions(exemploService);
+      verify(exemploService).delete(id);
+      verifyNoMoreInteractions(exemploService);
+    }
   }
 }

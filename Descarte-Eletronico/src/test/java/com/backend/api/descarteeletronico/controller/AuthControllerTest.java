@@ -18,12 +18,20 @@ import com.backend.api.descarteeletronico.service.AuthService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.ClassOrderer;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestClassOrder;
+import org.junit.jupiter.api.TestMethodOrder;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
+@TestClassOrder(ClassOrderer.OrderAnnotation.class)
 class AuthControllerTest {
 
   private MockMvc mockMvc;
@@ -58,54 +66,64 @@ class AuthControllerTest {
                 null));
   }
 
-  @Test
-  void loginReturnsTokenWhenCredentialsAreValid() throws Exception {
-    when(authService.login(request)).thenReturn(response);
+  @Nested
+  @Order(5)
+  @DisplayName("Cenários de Lógica Especial")
+  @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+  class LoginTests {
 
-    mockMvc
-        .perform(
-            post("/api/v1/auth/login")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request)))
-        .andExpect(status().isOk())
-        .andExpect(jsonPath("$.accessToken").value(response.accessToken()))
-        .andExpect(jsonPath("$.tokenType").value("Bearer"))
-        .andExpect(jsonPath("$.expiresIn").value(3600L))
-        .andExpect(jsonPath("$.usuario.email").value(request.email()));
+    @Test
+    @Order(1)
+    void loginReturnsTokenWhenCredentialsAreValid() throws Exception {
+      when(authService.login(request)).thenReturn(response);
 
-    verify(authService).login(request);
-    verifyNoMoreInteractions(authService);
-  }
+      mockMvc
+          .perform(
+              post("/api/v1/auth/login")
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content(objectMapper.writeValueAsString(request)))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$.accessToken").value(response.accessToken()))
+          .andExpect(jsonPath("$.tokenType").value("Bearer"))
+          .andExpect(jsonPath("$.expiresIn").value(3600L))
+          .andExpect(jsonPath("$.usuario.email").value(request.email()));
 
-  @Test
-  void loginReturnsUnauthorizedWhenCredentialsAreInvalid() throws Exception {
-    when(authService.login(request))
-        .thenThrow(new BadCredentialsException("Credenciais inválidas"));
+      verify(authService).login(request);
+      verifyNoMoreInteractions(authService);
+    }
 
-    mockMvc
-        .perform(
-            post("/api/v1/auth/login")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request)))
-        .andExpect(status().isUnauthorized())
-        .andExpect(jsonPath("$.message").value("Credenciais inválidas"));
+    @Test
+    @Order(2)
+    void loginReturnsUnauthorizedWhenCredentialsAreInvalid() throws Exception {
+      when(authService.login(request))
+          .thenThrow(new BadCredentialsException("Credenciais inválidas"));
 
-    verify(authService).login(request);
-    verifyNoMoreInteractions(authService);
-  }
+      mockMvc
+          .perform(
+              post("/api/v1/auth/login")
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content(objectMapper.writeValueAsString(request)))
+          .andExpect(status().isUnauthorized())
+          .andExpect(jsonPath("$.message").value("Credenciais inválidas"));
 
-  @Test
-  void loginReturnsBadRequestWhenPayloadIsInvalid() throws Exception {
-    LoginRequest invalidRequest = new LoginRequest("email-invalido", "");
+      verify(authService).login(request);
+      verifyNoMoreInteractions(authService);
+    }
 
-    mockMvc
-        .perform(
-            post("/api/v1/auth/login")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(invalidRequest)))
-        .andExpect(status().isBadRequest())
-        .andExpect(jsonPath("$.message").value("Dados de entrada inválidos"));
+    @Test
+    @Order(3)
+    void loginReturnsBadRequestWhenPayloadIsInvalid() throws Exception {
+      LoginRequest invalidRequest = new LoginRequest("email-invalido", "");
 
-    verifyNoInteractions(authService);
+      mockMvc
+          .perform(
+              post("/api/v1/auth/login")
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content(objectMapper.writeValueAsString(invalidRequest)))
+          .andExpect(status().isBadRequest())
+          .andExpect(jsonPath("$.message").value("Dados de entrada inválidos"));
+
+      verifyNoInteractions(authService);
+    }
   }
 }

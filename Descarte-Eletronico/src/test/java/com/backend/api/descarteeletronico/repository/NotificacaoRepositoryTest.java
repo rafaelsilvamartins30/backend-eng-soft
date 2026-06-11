@@ -10,89 +10,93 @@ import com.backend.api.descarteeletronico.model.pontocoleta.PontoColeta;
 import java.math.BigDecimal;
 import java.time.LocalTime;
 import java.util.Set;
+import org.junit.jupiter.api.ClassOrderer;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestClassOrder;
+import org.junit.jupiter.api.TestMethodOrder;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
-import org.springframework.boot.flyway.autoconfigure.FlywayAutoConfiguration;
-import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
-import org.testcontainers.postgresql.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 @DataJpaTest
-@Testcontainers(disabledWithoutDocker = true)
-@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-@ImportAutoConfiguration(FlywayAutoConfiguration.class)
-class NotificacaoRepositoryTest {
-
-  @Container
-  static final PostgreSQLContainer POSTGRES =
-      new PostgreSQLContainer("postgres:16-alpine")
-          .withDatabaseName("descarte_eletronico_test")
-          .withUsername("descarte")
-          .withPassword("descarte");
+@TestClassOrder(ClassOrderer.OrderAnnotation.class)
+@DisplayName("NotificacaoRepository - Testes de Persistência")
+class NotificacaoRepositoryTest extends BaseRepositoryTest {
 
   @Autowired private NotificacaoRepository notificacaoRepository;
   @Autowired private RelatoProblemaRepository relatoProblemaRepository;
   @Autowired private PontoColetaRepository pontoColetaRepository;
   @Autowired private JdbcTemplate jdbcTemplate;
 
-  @DynamicPropertySource
-  static void configureDatasource(DynamicPropertyRegistry registry) {
-    registry.add("spring.datasource.url", POSTGRES::getJdbcUrl);
-    registry.add("spring.datasource.username", POSTGRES::getUsername);
-    registry.add("spring.datasource.password", POSTGRES::getPassword);
+  @Nested
+  @Order(1)
+  @DisplayName("Persistência")
+  @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+  class PersistenceTests {
+
+    @Test
+    @Order(1)
+    @DisplayName("Deve garantir que a migration do Flyway criou a tabela notificacao")
+    void flywayMigrationCreatesNotificacaoTable() {
+      Boolean notificacaoExists =
+              jdbcTemplate.queryForObject(
+                      "select exists (select 1 from information_schema.tables where table_name = 'notificacao')",
+                      Boolean.class);
+
+      assertThat(notificacaoExists).isTrue();
+    }
   }
 
-  @Test
-  void flywayMigrationCreatesNotificacaoTable() {
-    Boolean notificacaoExists =
-            jdbcTemplate.queryForObject(
-                    "select exists (select 1 from information_schema.tables where table_name = 'notificacao')",
-                    Boolean.class);
+  @Nested
+  @Order(2)
+  @DisplayName("Consultas Customizadas")
+  @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+  class CustomQueryTests {
 
-    assertThat(notificacaoExists).isTrue();
-  }
+    @Test
+    @Order(1)
+    @DisplayName("Deve retornar apenas notificações ativas (não lidas)")
+    void findAllByEntityStatusReturnsOnlyUnreadNotifications() {
+      notificacaoRepository.saveAndFlush(createNotificacao(EntityStatus.ACTIVE));
+      notificacaoRepository.saveAndFlush(createNotificacao(EntityStatus.INACTIVE));
+      notificacaoRepository.saveAndFlush(createNotificacao(EntityStatus.DELETED));
 
-  @Test
-  void findAllByEntityStatusReturnsOnlyUnreadNotifications() {
-    notificacaoRepository.saveAndFlush(createNotificacao(EntityStatus.ACTIVE));
-    notificacaoRepository.saveAndFlush(createNotificacao(EntityStatus.INACTIVE));
-    notificacaoRepository.saveAndFlush(createNotificacao(EntityStatus.DELETED));
+      Set<Notificacao> result = notificacaoRepository.findAllByEntityStatus(EntityStatus.ACTIVE);
 
-    Set<Notificacao> result = notificacaoRepository.findAllByEntityStatus(EntityStatus.ACTIVE);
+      assertThat(result).hasSize(1);
+      assertThat(result)
+              .extracting(Notificacao::getEntityStatus)
+              .containsExactly(EntityStatus.ACTIVE);
+    }
 
-    assertThat(result).hasSize(1);
-    assertThat(result)
-            .extracting(Notificacao::getEntityStatus)
-            .containsExactly(EntityStatus.ACTIVE);
-  }
+    @Test
+    @Order(2)
+    @DisplayName("Deve retornar apenas notificações ativas por ID de relato de problema")
+    void findAllByRelatoProblemaIdAndEntityStatusReturnsOnlyActiveNotifications() {
+      PontoColeta pontoColeta = savePontoColeta("EcoPonto Centro");
+      RelatoProblema relato =
+              relatoProblemaRepository.saveAndFlush(
+                      new RelatoProblema(pontoColeta, TipoRelato.LIXEIRA_CHEIA, "Maria Silva", "maria@email.com", "Relato de teste"));
 
-  @Test
-  void findAllByRelatoProblemaIdAndEntityStatusReturnsOnlyActiveNotifications() {
-    PontoColeta pontoColeta = savePontoColeta("EcoPonto Centro");
-    RelatoProblema relato =
-            relatoProblemaRepository.saveAndFlush(
-                    new RelatoProblema(pontoColeta, TipoRelato.LIXEIRA_CHEIA, "Maria Silva", "maria@email.com", "Relato de teste"));
+      Notificacao active = new Notificacao("Lixeira Cheia", "Novo relato recebido.", pontoColeta, relato);
+      Notificacao inactive = new Notificacao("Lixeira Cheia", "Novo relato recebido.", pontoColeta, relato);
+      inactive.setEntityStatus(EntityStatus.INACTIVE);
 
-    Notificacao active = new Notificacao("Lixeira Cheia", "Novo relato recebido.", pontoColeta, relato);
-    Notificacao inactive = new Notificacao("Lixeira Cheia", "Novo relato recebido.", pontoColeta, relato);
-    inactive.setEntityStatus(EntityStatus.INACTIVE);
+      notificacaoRepository.saveAllAndFlush(Set.of(active, inactive));
 
-    notificacaoRepository.saveAllAndFlush(Set.of(active, inactive));
+      Set<Notificacao> result =
+              notificacaoRepository.findAllByRelatoProblemaIdAndEntityStatus(
+                      relato.getId(), EntityStatus.ACTIVE);
 
-    Set<Notificacao> result =
-            notificacaoRepository.findAllByRelatoProblemaIdAndEntityStatus(
-                    relato.getId(), EntityStatus.ACTIVE);
-
-    assertThat(result).hasSize(1);
-    assertThat(result)
-            .extracting(Notificacao::getEntityStatus)
-            .containsExactly(EntityStatus.ACTIVE);
+      assertThat(result).hasSize(1);
+      assertThat(result)
+              .extracting(Notificacao::getEntityStatus)
+              .containsExactly(EntityStatus.ACTIVE);
+    }
   }
 
   private Notificacao createNotificacao(EntityStatus entityStatus) {

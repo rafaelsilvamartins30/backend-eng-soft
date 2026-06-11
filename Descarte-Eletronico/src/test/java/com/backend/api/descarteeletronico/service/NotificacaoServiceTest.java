@@ -23,13 +23,23 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.ClassOrderer;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestClassOrder;
+import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
+@TestClassOrder(ClassOrderer.OrderAnnotation.class)
 class NotificacaoServiceTest {
 
   @Mock private NotificacaoRepository notificacaoRepository;
@@ -84,96 +94,173 @@ class NotificacaoServiceTest {
                     null);
   }
 
-  @Test
-  void criarNotificacaoDeRelatoSavesActiveNotification() {
-    when(notificacaoRepository.saveAndFlush(org.mockito.ArgumentMatchers.any(Notificacao.class)))
-            .thenAnswer(invocation -> invocation.getArgument(0));
+  @Nested
+  @Order(1)
+  @DisplayName("Cenários de Cadastro")
+  @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+  class Cadastro {
 
-    Notificacao result = notificacaoService.criarNotificacaoDeRelato(relato);
+    @Test
+    @Order(1)
+    void criarNotificacaoDeRelatoSavesActiveNotification() {
+      when(notificacaoRepository.saveAndFlush(org.mockito.ArgumentMatchers.any(Notificacao.class)))
+              .thenAnswer(invocation -> invocation.getArgument(0));
 
-    assertThat(result.getTitulo()).isEqualTo("Lixeira Cheia");
-    assertThat(result.getEntityStatus()).isEqualTo(EntityStatus.ACTIVE);
-    assertThat(result.getRelatoProblema()).isEqualTo(relato);
-    assertThat(result.getPontoColeta()).isEqualTo(pontoColeta);
+      Notificacao result = notificacaoService.criarNotificacaoDeRelato(relato);
 
-    verify(notificacaoRepository).saveAndFlush(org.mockito.ArgumentMatchers.any(Notificacao.class));
-    verifyNoMoreInteractions(notificacaoRepository);
-    verifyNoInteractions(notificacaoMapper);
+      assertThat(result.getTitulo()).isEqualTo("Lixeira Cheia");
+      assertThat(result.getEntityStatus()).isEqualTo(EntityStatus.ACTIVE);
+      assertThat(result.getRelatoProblema()).isEqualTo(relato);
+      assertThat(result.getPontoColeta()).isEqualTo(pontoColeta);
+
+      verify(notificacaoRepository).saveAndFlush(org.mockito.ArgumentMatchers.any(Notificacao.class));
+      verifyNoMoreInteractions(notificacaoRepository);
+      verifyNoInteractions(notificacaoMapper);
+    }
   }
 
-  @Test
-  void findUnreadReturnsActiveNotifications() {
-    Set<Notificacao> notificacoes = Set.of(notificacao);
-    Set<NotificacaoResponse> responses = Set.of(response);
-    when(notificacaoRepository.findAllByEntityStatus(EntityStatus.ACTIVE)).thenReturn(notificacoes);
-    when(notificacaoMapper.toResponseSet(notificacoes)).thenReturn(responses);
+  @Nested
+  @Order(2)
+  @DisplayName("Cenários de Consulta")
+  @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+  class Consulta {
 
-    Set<NotificacaoResponse> result = notificacaoService.findUnread();
+    @Test
+    @Order(1)
+    void findUnreadReturnsActiveNotifications() {
+      Set<Notificacao> notificacoes = Set.of(notificacao);
+      Set<NotificacaoResponse> responses = Set.of(response);
+      when(notificacaoRepository.findAllByEntityStatus(EntityStatus.ACTIVE)).thenReturn(notificacoes);
+      when(notificacaoMapper.toResponseSet(notificacoes)).thenReturn(responses);
 
-    assertThat(result).isEqualTo(responses);
-    verify(notificacaoRepository).findAllByEntityStatus(EntityStatus.ACTIVE);
-    verify(notificacaoMapper).toResponseSet(notificacoes);
-    verifyNoMoreInteractions(notificacaoRepository, notificacaoMapper);
+      Set<NotificacaoResponse> result = notificacaoService.findUnread();
+
+      assertThat(result).isEqualTo(responses);
+      verify(notificacaoRepository).findAllByEntityStatus(EntityStatus.ACTIVE);
+      verify(notificacaoMapper).toResponseSet(notificacoes);
+      verifyNoMoreInteractions(notificacaoRepository, notificacaoMapper);
+    }
+
+    @Test
+    @Order(2)
+    void findAllReturnsNonDeletedNotifications() {
+      Set<Notificacao> notificacoes = Set.of(notificacao);
+      Set<NotificacaoResponse> responses = Set.of(response);
+      when(notificacaoRepository.findAllByEntityStatusNot(EntityStatus.DELETED)).thenReturn(notificacoes);
+      when(notificacaoMapper.toResponseSet(notificacoes)).thenReturn(responses);
+
+      Set<NotificacaoResponse> result = notificacaoService.findAll();
+
+      assertThat(result).isEqualTo(responses);
+      verify(notificacaoRepository).findAllByEntityStatusNot(EntityStatus.DELETED);
+      verify(notificacaoMapper).toResponseSet(notificacoes);
+      verifyNoMoreInteractions(notificacaoRepository, notificacaoMapper);
+    }
   }
 
-  @Test
-  void markAsViewedMarksNotificationAsInactive() {
-    when(notificacaoRepository.findByIdAndEntityStatusNot(id, EntityStatus.DELETED))
-            .thenReturn(Optional.of(notificacao));
-    when(notificacaoRepository.save(notificacao)).thenReturn(notificacao);
-    when(notificacaoMapper.toResponse(notificacao)).thenReturn(response);
+  @Nested
+  @Order(3)
+  @DisplayName("Cenários de Atualização")
+  @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+  class Atualizacao {
 
-    NotificacaoResponse result = notificacaoService.markAsViewed(id);
+    @Test
+    @Order(1)
+    void markAsViewedMarksNotificationAsInactive() {
+      when(notificacaoRepository.findByIdAndEntityStatusNot(id, EntityStatus.DELETED))
+              .thenReturn(Optional.of(notificacao));
+      when(notificacaoRepository.save(notificacao)).thenReturn(notificacao);
+      when(notificacaoMapper.toResponse(notificacao)).thenReturn(response);
 
-    assertThat(result).isEqualTo(response);
-    assertThat(notificacao.getEntityStatus()).isEqualTo(EntityStatus.INACTIVE);
-    verify(notificacaoRepository).findByIdAndEntityStatusNot(id, EntityStatus.DELETED);
-    verify(notificacaoRepository).save(notificacao);
-    verify(notificacaoMapper).toResponse(notificacao);
-    verifyNoMoreInteractions(notificacaoRepository, notificacaoMapper);
+      NotificacaoResponse result = notificacaoService.markAsViewed(id);
+
+      assertThat(result).isEqualTo(response);
+      assertThat(notificacao.getEntityStatus()).isEqualTo(EntityStatus.INACTIVE);
+      verify(notificacaoRepository).findByIdAndEntityStatusNot(id, EntityStatus.DELETED);
+      verify(notificacaoRepository).save(notificacao);
+      verify(notificacaoMapper).toResponse(notificacao);
+      verifyNoMoreInteractions(notificacaoRepository, notificacaoMapper);
+    }
+
+    @Test
+    @Order(2)
+    void markNotificacoesDoRelatoComoVistasUpdatesStatus() {
+      Set<Notificacao> notificacoes = Set.of(notificacao);
+      when(notificacaoRepository.findAllByRelatoProblemaIdAndEntityStatus(relato.getId(), EntityStatus.ACTIVE))
+              .thenReturn(notificacoes);
+
+      notificacaoService.markNotificacoesDoRelatoComoVistas(relato.getId());
+
+      assertThat(notificacao.getEntityStatus()).isEqualTo(EntityStatus.INACTIVE);
+      verify(notificacaoRepository).findAllByRelatoProblemaIdAndEntityStatus(relato.getId(), EntityStatus.ACTIVE);
+      verify(notificacaoRepository).saveAll(notificacoes);
+      verifyNoMoreInteractions(notificacaoRepository);
+    }
   }
 
-  @Test
-  void markNotificacoesDoRelatoComoVistasUpdatesStatus() {
-    Set<Notificacao> notificacoes = Set.of(notificacao);
-    when(notificacaoRepository.findAllByRelatoProblemaIdAndEntityStatus(relato.getId(), EntityStatus.ACTIVE))
-            .thenReturn(notificacoes);
+  @Nested
+  @Order(4)
+  @DisplayName("Cenários de Exclusão")
+  @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+  class Exclusao {
 
-    notificacaoService.markNotificacoesDoRelatoComoVistas(relato.getId());
+    @Test
+    @Order(1)
+    void deleteMarksNotificationAsDeleted() {
+      when(notificacaoRepository.findByIdAndEntityStatusNot(id, EntityStatus.DELETED))
+              .thenReturn(Optional.of(notificacao));
 
-    assertThat(notificacao.getEntityStatus()).isEqualTo(EntityStatus.INACTIVE);
-    verify(notificacaoRepository).findAllByRelatoProblemaIdAndEntityStatus(relato.getId(), EntityStatus.ACTIVE);
-    verify(notificacaoRepository).saveAll(notificacoes);
-    verifyNoMoreInteractions(notificacaoRepository);
+      notificacaoService.delete(id);
+
+      assertThat(notificacao.getEntityStatus()).isEqualTo(EntityStatus.DELETED);
+      assertThat(notificacao.getDeletedAt()).isNotNull();
+      verify(notificacaoRepository).findByIdAndEntityStatusNot(id, EntityStatus.DELETED);
+      verify(notificacaoRepository).save(notificacao);
+      verifyNoMoreInteractions(notificacaoRepository);
+      verifyNoInteractions(notificacaoMapper);
+    }
+
+    @Test
+    @Order(2)
+    void deleteThrowsWhenNotificationDoesNotExist() {
+      when(notificacaoRepository.findByIdAndEntityStatusNot(id, EntityStatus.DELETED))
+              .thenReturn(Optional.empty());
+
+      assertThatThrownBy(() -> notificacaoService.delete(id))
+              .isInstanceOf(ResourceNotFoundException.class)
+              .hasMessage("Notificação não encontrada");
+
+      verify(notificacaoRepository).findByIdAndEntityStatusNot(id, EntityStatus.DELETED);
+      verify(notificacaoRepository, never()).save(notificacao);
+      verifyNoInteractions(notificacaoMapper);
+      verifyNoMoreInteractions(notificacaoRepository);
+    }
   }
 
-  @Test
-  void deleteMarksNotificationAsDeleted() {
-    when(notificacaoRepository.findByIdAndEntityStatusNot(id, EntityStatus.DELETED))
-            .thenReturn(Optional.of(notificacao));
+  @Nested
+  @Order(5)
+  @DisplayName("Cenários de Lógica Especial")
+  @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+  class LogicaEspecial {
 
-    notificacaoService.delete(id);
+    @ParameterizedTest
+    @Order(1)
+    @CsvSource({
+            "LIXEIRA_CHEIA, Lixeira Cheia",
+            "PONTO_NAO_EXISTE, Ponto Inexistente",
+            "LIXEIRA_DANIFICADA, Lixeira Danificada",
+            "HORARIO_INCORRETO, Horário Incorreto",
+            "MATERIAIS_RECUSADOS, Materiais Recusados",
+            "OUTRO, Problema Relatado"
+    })
+    void gerarTituloNotificacaoReturnsCorrectTitleForEveryTipoRelato(TipoRelato tipo, String tituloEsperado) {
+      relato.setTipoRelato(tipo);
+      when(notificacaoRepository.saveAndFlush(org.mockito.ArgumentMatchers.any(Notificacao.class)))
+              .thenAnswer(invocation -> invocation.getArgument(0));
 
-    assertThat(notificacao.getEntityStatus()).isEqualTo(EntityStatus.DELETED);
-    assertThat(notificacao.getDeletedAt()).isNotNull();
-    verify(notificacaoRepository).findByIdAndEntityStatusNot(id, EntityStatus.DELETED);
-    verify(notificacaoRepository).save(notificacao);
-    verifyNoMoreInteractions(notificacaoRepository);
-    verifyNoInteractions(notificacaoMapper);
-  }
+      Notificacao result = notificacaoService.criarNotificacaoDeRelato(relato);
 
-  @Test
-  void deleteThrowsWhenNotificationDoesNotExist() {
-    when(notificacaoRepository.findByIdAndEntityStatusNot(id, EntityStatus.DELETED))
-            .thenReturn(Optional.empty());
-
-    assertThatThrownBy(() -> notificacaoService.delete(id))
-            .isInstanceOf(ResourceNotFoundException.class)
-            .hasMessage("Notificação não encontrada");
-
-    verify(notificacaoRepository).findByIdAndEntityStatusNot(id, EntityStatus.DELETED);
-    verify(notificacaoRepository, never()).save(notificacao);
-    verifyNoInteractions(notificacaoMapper);
-    verifyNoMoreInteractions(notificacaoRepository);
+      assertThat(result.getTitulo()).isEqualTo(tituloEsperado);
+    }
   }
 }

@@ -14,10 +14,18 @@ import com.backend.api.descarteeletronico.model.usuario.dto.UsuarioResponse;
 import com.backend.api.descarteeletronico.security.JwtService;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.ClassOrderer;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestClassOrder;
+import org.junit.jupiter.api.TestMethodOrder;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 
+@TestClassOrder(ClassOrderer.OrderAnnotation.class)
 class AuthServiceTest {
 
   private AuthenticationManager authenticationManager;
@@ -33,42 +41,50 @@ class AuthServiceTest {
     authService = new AuthService(authenticationManager, jwtService, usuarioMapper);
   }
 
-  @Test
-  void loginAuthenticatesUserAndReturnsTokenResponse() {
-    LoginRequest request = new LoginRequest("admin@descarte.local", "Admin@123");
-    Usuario usuario = new Usuario("Administrador", request.email(), "encoded-password");
-    UsuarioResponse usuarioResponse =
-        new UsuarioResponse(
-            UUID.randomUUID(),
-            usuario.getNome(),
-            usuario.getEmail(),
-            0L,
-            null,
-            null,
-            EntityStatus.ACTIVE,
-            null);
-    UsernamePasswordAuthenticationToken authentication =
-        new UsernamePasswordAuthenticationToken(usuario, null, usuario.getAuthorities());
+  @Nested
+  @Order(1)
+  @DisplayName("Cenários de Lógica Especial")
+  @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+  class LoginTests {
 
-    when(authenticationManager.authenticate(
-            new UsernamePasswordAuthenticationToken(request.email(), request.senha())))
-        .thenReturn(authentication);
-    when(jwtService.generateToken(usuario)).thenReturn("jwt-token");
-    when(jwtService.expiresInSeconds()).thenReturn(3600L);
-    when(usuarioMapper.toResponse(usuario)).thenReturn(usuarioResponse);
+    @Test
+    @Order(1)
+    void loginAuthenticatesUserAndReturnsTokenResponse() {
+      LoginRequest request = new LoginRequest("admin@descarte.local", "Admin@123");
+      Usuario usuario = new Usuario("Administrador", request.email(), "encoded-password");
+      UsuarioResponse usuarioResponse =
+          new UsuarioResponse(
+              UUID.randomUUID(),
+              usuario.getNome(),
+              usuario.getEmail(),
+              0L,
+              null,
+              null,
+              EntityStatus.ACTIVE,
+              null);
+      UsernamePasswordAuthenticationToken authentication =
+          new UsernamePasswordAuthenticationToken(usuario, null, usuario.getAuthorities());
 
-    var response = authService.login(request);
+      when(authenticationManager.authenticate(
+              new UsernamePasswordAuthenticationToken(request.email(), request.senha())))
+          .thenReturn(authentication);
+      when(jwtService.generateToken(usuario)).thenReturn("jwt-token");
+      when(jwtService.expiresInSeconds()).thenReturn(3600L);
+      when(usuarioMapper.toResponse(usuario)).thenReturn(usuarioResponse);
 
-    assertThat(response.accessToken()).isEqualTo("jwt-token");
-    assertThat(response.tokenType()).isEqualTo("Bearer");
-    assertThat(response.expiresIn()).isEqualTo(3600L);
-    assertThat(response.usuario()).isEqualTo(usuarioResponse);
+      var response = authService.login(request);
 
-    verify(authenticationManager)
-        .authenticate(new UsernamePasswordAuthenticationToken(request.email(), request.senha()));
-    verify(jwtService).generateToken(usuario);
-    verify(jwtService).expiresInSeconds();
-    verify(usuarioMapper).toResponse(usuario);
-    verifyNoMoreInteractions(authenticationManager, jwtService, usuarioMapper);
+      assertThat(response.accessToken()).isEqualTo("jwt-token");
+      assertThat(response.tokenType()).isEqualTo("Bearer");
+      assertThat(response.expiresIn()).isEqualTo(3600L);
+      assertThat(response.usuario()).isEqualTo(usuarioResponse);
+
+      verify(authenticationManager)
+          .authenticate(new UsernamePasswordAuthenticationToken(request.email(), request.senha()));
+      verify(jwtService).generateToken(usuario);
+      verify(jwtService).expiresInSeconds();
+      verify(usuarioMapper).toResponse(usuario);
+      verifyNoMoreInteractions(authenticationManager, jwtService, usuarioMapper);
+    }
   }
 }

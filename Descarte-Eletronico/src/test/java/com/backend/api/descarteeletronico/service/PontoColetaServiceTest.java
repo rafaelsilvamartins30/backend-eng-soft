@@ -20,17 +20,30 @@ import com.backend.api.descarteeletronico.repository.PontoColetaRepository;
 import com.backend.api.descarteeletronico.repository.TipoProdutoRepository;
 import java.math.BigDecimal;
 import java.time.LocalTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.ClassOrderer;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestClassOrder;
+import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 @ExtendWith(MockitoExtension.class)
+@TestClassOrder(ClassOrderer.OrderAnnotation.class)
 class PontoColetaServiceTest {
 
   @Mock private PontoColetaRepository pontoColetaRepository;
@@ -93,190 +106,245 @@ class PontoColetaServiceTest {
             null);
   }
 
-  @Test
-  void createLinksActiveTiposProdutoSavesActiveEntityAndReturnsResponse() {
-    Set<TipoProduto> tiposProduto = Set.of(tipoProduto);
-    when(pontoColetaMapper.toEntity(request)).thenReturn(pontoColeta);
-    when(tipoProdutoRepository.findAllByIdInAndEntityStatus(
-            request.tipoProdutoIds(), EntityStatus.ACTIVE))
-        .thenReturn(tiposProduto);
-    when(pontoColetaRepository.save(pontoColeta)).thenReturn(pontoColeta);
-    when(pontoColetaMapper.toResponse(pontoColeta)).thenReturn(response);
+  @Nested
+  @Order(1)
+  @DisplayName("Cenários de Cadastro")
+  @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+  class Cadastro {
 
-    PontoColetaResponse result = pontoColetaService.create(request);
+    @Test
+    @Order(1)
+    void createLinksActiveTiposProdutoSavesActiveEntityAndReturnsResponse() {
+      Set<TipoProduto> tiposProduto = Set.of(tipoProduto);
+      when(pontoColetaMapper.toEntity(request)).thenReturn(pontoColeta);
+      when(tipoProdutoRepository.findAllByIdInAndEntityStatus(
+              request.tipoProdutoIds(), EntityStatus.ACTIVE))
+          .thenReturn(tiposProduto);
+      when(pontoColetaRepository.save(pontoColeta)).thenReturn(pontoColeta);
+      when(pontoColetaMapper.toResponse(pontoColeta)).thenReturn(response);
 
-    assertThat(result).isEqualTo(response);
-    assertThat(pontoColeta.getTiposProduto()).isEqualTo(tiposProduto);
-    assertThat(pontoColeta.getEntityStatus()).isEqualTo(EntityStatus.ACTIVE);
-    assertThat(pontoColeta.getDeletedAt()).isNull();
-    verify(pontoColetaMapper).toEntity(request);
-    verify(tipoProdutoRepository)
-        .findAllByIdInAndEntityStatus(request.tipoProdutoIds(), EntityStatus.ACTIVE);
-    verify(pontoColetaRepository).save(pontoColeta);
-    verify(pontoColetaMapper).toResponse(pontoColeta);
-    verifyNoMoreInteractions(pontoColetaRepository, tipoProdutoRepository, pontoColetaMapper);
+      PontoColetaResponse result = pontoColetaService.create(request);
+
+      assertThat(result).isEqualTo(response);
+      assertThat(pontoColeta.getTiposProduto()).isEqualTo(tiposProduto);
+      assertThat(pontoColeta.getEntityStatus()).isEqualTo(EntityStatus.ACTIVE);
+      assertThat(pontoColeta.getDeletedAt()).isNull();
+      verify(pontoColetaMapper).toEntity(request);
+      verify(tipoProdutoRepository)
+          .findAllByIdInAndEntityStatus(request.tipoProdutoIds(), EntityStatus.ACTIVE);
+      verify(pontoColetaRepository).save(pontoColeta);
+      verify(pontoColetaMapper).toResponse(pontoColeta);
+      verifyNoMoreInteractions(pontoColetaRepository, tipoProdutoRepository, pontoColetaMapper);
+    }
+
+    @Test
+    @Order(2)
+    void createThrowsWhenAnyTipoProdutoDoesNotExistOrIsInactive() {
+      when(pontoColetaMapper.toEntity(request)).thenReturn(pontoColeta);
+      when(tipoProdutoRepository.findAllByIdInAndEntityStatus(
+              request.tipoProdutoIds(), EntityStatus.ACTIVE))
+          .thenReturn(Set.of());
+
+      assertThatThrownBy(() -> pontoColetaService.create(request))
+          .isInstanceOf(BusinessException.class)
+          .hasMessage("Informe apenas tipos de produto ativos e existentes");
+      verify(pontoColetaMapper).toEntity(request);
+      verify(tipoProdutoRepository)
+          .findAllByIdInAndEntityStatus(request.tipoProdutoIds(), EntityStatus.ACTIVE);
+      verify(pontoColetaRepository, never()).save(pontoColeta);
+      verifyNoMoreInteractions(pontoColetaRepository, tipoProdutoRepository, pontoColetaMapper);
+    }
   }
 
-  @Test
-  void createThrowsWhenAnyTipoProdutoDoesNotExistOrIsInactive() {
-    when(pontoColetaMapper.toEntity(request)).thenReturn(pontoColeta);
-    when(tipoProdutoRepository.findAllByIdInAndEntityStatus(
-            request.tipoProdutoIds(), EntityStatus.ACTIVE))
-        .thenReturn(Set.of());
+  @Nested
+  @Order(2)
+  @DisplayName("Cenários de Consulta")
+  @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+  class Consulta {
 
-    assertThatThrownBy(() -> pontoColetaService.create(request))
-        .isInstanceOf(BusinessException.class)
-        .hasMessage("Informe apenas tipos de produto ativos e existentes");
-    verify(pontoColetaMapper).toEntity(request);
-    verify(tipoProdutoRepository)
-        .findAllByIdInAndEntityStatus(request.tipoProdutoIds(), EntityStatus.ACTIVE);
-    verify(pontoColetaRepository, never()).save(pontoColeta);
-    verifyNoMoreInteractions(pontoColetaRepository, tipoProdutoRepository, pontoColetaMapper);
+    @Test
+    @Order(1)
+    void findByIdReturnsMappedActiveEntity() {
+      when(pontoColetaRepository.findByIdAndEntityStatus(id, EntityStatus.ACTIVE))
+          .thenReturn(Optional.of(pontoColeta));
+      when(pontoColetaMapper.toResponse(pontoColeta)).thenReturn(response);
+
+      PontoColetaResponse result = pontoColetaService.findById(id);
+
+      assertThat(result).isEqualTo(response);
+      verify(pontoColetaRepository).findByIdAndEntityStatus(id, EntityStatus.ACTIVE);
+      verify(pontoColetaMapper).toResponse(pontoColeta);
+      verifyNoInteractions(tipoProdutoRepository);
+      verifyNoMoreInteractions(pontoColetaRepository, pontoColetaMapper);
+    }
+
+    @Test
+    @Order(2)
+    void findByIdThrowsWhenEntityDoesNotExist() {
+      when(pontoColetaRepository.findByIdAndEntityStatus(id, EntityStatus.ACTIVE))
+          .thenReturn(Optional.empty());
+
+      assertThatThrownBy(() -> pontoColetaService.findById(id))
+          .isInstanceOf(ResourceNotFoundException.class)
+          .hasMessage("Ponto de coleta não encontrado");
+      verify(pontoColetaRepository).findByIdAndEntityStatus(id, EntityStatus.ACTIVE);
+      verifyNoInteractions(tipoProdutoRepository, pontoColetaMapper);
+      verifyNoMoreInteractions(pontoColetaRepository);
+    }
+
+    @Test
+    @Order(3)
+    void findAllReturnsOnlyActiveEntitiesAndMapsResponses() {
+      Set<PontoColeta> pontosColeta = Set.of(pontoColeta);
+      Set<PontoColetaResponse> responses = Set.of(response);
+      when(pontoColetaRepository.findAllByEntityStatus(EntityStatus.ACTIVE)).thenReturn(pontosColeta);
+      when(pontoColetaMapper.toResponseSet(pontosColeta)).thenReturn(responses);
+
+      Set<PontoColetaResponse> result = pontoColetaService.findAll();
+
+      assertThat(result).isEqualTo(responses);
+      verify(pontoColetaRepository).findAllByEntityStatus(EntityStatus.ACTIVE);
+      verify(pontoColetaMapper).toResponseSet(pontosColeta);
+      verifyNoInteractions(tipoProdutoRepository);
+      verifyNoMoreInteractions(pontoColetaRepository, pontoColetaMapper);
+    }
+
+    @Test
+    @Order(4)
+    void findAllWithEmptyResultDelegatesToMapper() {
+      Set<PontoColeta> pontosColeta = Set.of();
+      Set<PontoColetaResponse> responses = Set.of();
+      when(pontoColetaRepository.findAllByEntityStatus(EntityStatus.ACTIVE)).thenReturn(pontosColeta);
+      when(pontoColetaMapper.toResponseSet(pontosColeta)).thenReturn(responses);
+
+      Set<PontoColetaResponse> result = pontoColetaService.findAll();
+
+      assertThat(result).isEmpty();
+      verify(pontoColetaRepository).findAllByEntityStatus(EntityStatus.ACTIVE);
+      verify(pontoColetaMapper).toResponseSet(pontosColeta);
+      verifyNoInteractions(tipoProdutoRepository);
+      verifyNoMoreInteractions(pontoColetaRepository, pontoColetaMapper);
+    }
+
+    @Test
+    @Order(5)
+    void findAllPagedReturnsMappedPageOfActiveEntities() {
+      Pageable pageable = PageRequest.of(0, 10);
+      Page<PontoColeta> page = new PageImpl<>(List.of(pontoColeta));
+      when(pontoColetaRepository.findAllByEntityStatus(EntityStatus.ACTIVE, pageable)).thenReturn(page);
+      when(pontoColetaMapper.toResponse(pontoColeta)).thenReturn(response);
+
+      Page<PontoColetaResponse> result = pontoColetaService.findAllPaged(pageable);
+
+      assertThat(result.getContent()).containsExactly(response);
+      verify(pontoColetaRepository).findAllByEntityStatus(EntityStatus.ACTIVE, pageable);
+      verify(pontoColetaMapper).toResponse(pontoColeta);
+      verifyNoMoreInteractions(pontoColetaRepository, pontoColetaMapper);
+    }
   }
 
-  @Test
-  void updateFindsActiveEntityUpdatesFieldsAndReplacesTiposProduto() {
-    Set<TipoProduto> tiposProduto = Set.of(tipoProduto);
-    when(pontoColetaRepository.findByIdAndEntityStatus(id, EntityStatus.ACTIVE))
-        .thenReturn(Optional.of(pontoColeta));
-    when(tipoProdutoRepository.findAllByIdInAndEntityStatus(
-            request.tipoProdutoIds(), EntityStatus.ACTIVE))
-        .thenReturn(tiposProduto);
-    when(pontoColetaRepository.save(pontoColeta)).thenReturn(pontoColeta);
-    when(pontoColetaMapper.toResponse(pontoColeta)).thenReturn(response);
+  @Nested
+  @Order(3)
+  @DisplayName("Cenários de Atualização")
+  @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+  class Atualizacao {
 
-    PontoColetaResponse result = pontoColetaService.update(id, request);
+    @Test
+    @Order(1)
+    void updateFindsActiveEntityUpdatesFieldsAndReplacesTiposProduto() {
+      Set<TipoProduto> tiposProduto = Set.of(tipoProduto);
+      when(pontoColetaRepository.findByIdAndEntityStatus(id, EntityStatus.ACTIVE))
+          .thenReturn(Optional.of(pontoColeta));
+      when(tipoProdutoRepository.findAllByIdInAndEntityStatus(
+              request.tipoProdutoIds(), EntityStatus.ACTIVE))
+          .thenReturn(tiposProduto);
+      when(pontoColetaRepository.save(pontoColeta)).thenReturn(pontoColeta);
+      when(pontoColetaMapper.toResponse(pontoColeta)).thenReturn(response);
 
-    assertThat(result).isEqualTo(response);
-    assertThat(pontoColeta.getTiposProduto()).isEqualTo(tiposProduto);
-    verify(pontoColetaRepository).findByIdAndEntityStatus(id, EntityStatus.ACTIVE);
-    verify(pontoColetaMapper).updateEntityFromRequest(request, pontoColeta);
-    verify(tipoProdutoRepository)
-        .findAllByIdInAndEntityStatus(request.tipoProdutoIds(), EntityStatus.ACTIVE);
-    verify(pontoColetaRepository).save(pontoColeta);
-    verify(pontoColetaMapper).toResponse(pontoColeta);
-    verifyNoMoreInteractions(pontoColetaRepository, tipoProdutoRepository, pontoColetaMapper);
+      PontoColetaResponse result = pontoColetaService.update(id, request);
+
+      assertThat(result).isEqualTo(response);
+      assertThat(pontoColeta.getTiposProduto()).isEqualTo(tiposProduto);
+      verify(pontoColetaRepository).findByIdAndEntityStatus(id, EntityStatus.ACTIVE);
+      verify(pontoColetaMapper).updateEntityFromRequest(request, pontoColeta);
+      verify(tipoProdutoRepository)
+          .findAllByIdInAndEntityStatus(request.tipoProdutoIds(), EntityStatus.ACTIVE);
+      verify(pontoColetaRepository).save(pontoColeta);
+      verify(pontoColetaMapper).toResponse(pontoColeta);
+      verifyNoMoreInteractions(pontoColetaRepository, tipoProdutoRepository, pontoColetaMapper);
+    }
+
+    @Test
+    @Order(2)
+    void updateThrowsWhenEntityDoesNotExist() {
+      when(pontoColetaRepository.findByIdAndEntityStatus(id, EntityStatus.ACTIVE))
+          .thenReturn(Optional.empty());
+
+      assertThatThrownBy(() -> pontoColetaService.update(id, request))
+          .isInstanceOf(ResourceNotFoundException.class)
+          .hasMessage("Ponto de coleta não encontrado");
+      verify(pontoColetaRepository).findByIdAndEntityStatus(id, EntityStatus.ACTIVE);
+      verify(pontoColetaRepository, never()).save(pontoColeta);
+      verifyNoInteractions(tipoProdutoRepository, pontoColetaMapper);
+      verifyNoMoreInteractions(pontoColetaRepository);
+    }
+
+    @Test
+    @Order(3)
+    void updateThrowsWhenAnyTipoProdutoDoesNotExistOrIsInactive() {
+      when(pontoColetaRepository.findByIdAndEntityStatus(id, EntityStatus.ACTIVE))
+          .thenReturn(Optional.of(pontoColeta));
+      when(tipoProdutoRepository.findAllByIdInAndEntityStatus(
+              request.tipoProdutoIds(), EntityStatus.ACTIVE))
+          .thenReturn(Set.of());
+
+      assertThatThrownBy(() -> pontoColetaService.update(id, request))
+          .isInstanceOf(BusinessException.class)
+          .hasMessage("Informe apenas tipos de produto ativos e existentes");
+      verify(pontoColetaRepository).findByIdAndEntityStatus(id, EntityStatus.ACTIVE);
+      verify(pontoColetaMapper).updateEntityFromRequest(request, pontoColeta);
+      verify(tipoProdutoRepository)
+          .findAllByIdInAndEntityStatus(request.tipoProdutoIds(), EntityStatus.ACTIVE);
+      verify(pontoColetaRepository, never()).save(pontoColeta);
+      verifyNoMoreInteractions(pontoColetaRepository, tipoProdutoRepository, pontoColetaMapper);
+    }
   }
 
-  @Test
-  void updateThrowsWhenEntityDoesNotExist() {
-    when(pontoColetaRepository.findByIdAndEntityStatus(id, EntityStatus.ACTIVE))
-        .thenReturn(Optional.empty());
+  @Nested
+  @Order(4)
+  @DisplayName("Cenários de Exclusão")
+  @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+  class Exclusao {
 
-    assertThatThrownBy(() -> pontoColetaService.update(id, request))
-        .isInstanceOf(ResourceNotFoundException.class)
-        .hasMessage("Ponto de coleta não encontrado");
-    verify(pontoColetaRepository).findByIdAndEntityStatus(id, EntityStatus.ACTIVE);
-    verify(pontoColetaRepository, never()).save(pontoColeta);
-    verifyNoInteractions(tipoProdutoRepository, pontoColetaMapper);
-    verifyNoMoreInteractions(pontoColetaRepository);
-  }
+    @Test
+    @Order(1)
+    void deleteMarksEntityAsDeletedAndPersistsSoftDelete() {
+      when(pontoColetaRepository.findByIdAndEntityStatus(id, EntityStatus.ACTIVE))
+          .thenReturn(Optional.of(pontoColeta));
 
-  @Test
-  void updateThrowsWhenAnyTipoProdutoDoesNotExistOrIsInactive() {
-    when(pontoColetaRepository.findByIdAndEntityStatus(id, EntityStatus.ACTIVE))
-        .thenReturn(Optional.of(pontoColeta));
-    when(tipoProdutoRepository.findAllByIdInAndEntityStatus(
-            request.tipoProdutoIds(), EntityStatus.ACTIVE))
-        .thenReturn(Set.of());
+      pontoColetaService.delete(id);
 
-    assertThatThrownBy(() -> pontoColetaService.update(id, request))
-        .isInstanceOf(BusinessException.class)
-        .hasMessage("Informe apenas tipos de produto ativos e existentes");
-    verify(pontoColetaRepository).findByIdAndEntityStatus(id, EntityStatus.ACTIVE);
-    verify(pontoColetaMapper).updateEntityFromRequest(request, pontoColeta);
-    verify(tipoProdutoRepository)
-        .findAllByIdInAndEntityStatus(request.tipoProdutoIds(), EntityStatus.ACTIVE);
-    verify(pontoColetaRepository, never()).save(pontoColeta);
-    verifyNoMoreInteractions(pontoColetaRepository, tipoProdutoRepository, pontoColetaMapper);
-  }
+      assertThat(pontoColeta.getEntityStatus()).isEqualTo(EntityStatus.DELETED);
+      assertThat(pontoColeta.getDeletedAt()).isNotNull();
+      verify(pontoColetaRepository).findByIdAndEntityStatus(id, EntityStatus.ACTIVE);
+      verify(pontoColetaRepository).save(pontoColeta);
+      verifyNoInteractions(tipoProdutoRepository, pontoColetaMapper);
+      verifyNoMoreInteractions(pontoColetaRepository);
+    }
 
-  @Test
-  void deleteMarksEntityAsDeletedAndPersistsSoftDelete() {
-    when(pontoColetaRepository.findByIdAndEntityStatus(id, EntityStatus.ACTIVE))
-        .thenReturn(Optional.of(pontoColeta));
+    @Test
+    @Order(2)
+    void deleteThrowsWhenEntityDoesNotExist() {
+      when(pontoColetaRepository.findByIdAndEntityStatus(id, EntityStatus.ACTIVE))
+          .thenReturn(Optional.empty());
 
-    pontoColetaService.delete(id);
-
-    assertThat(pontoColeta.getEntityStatus()).isEqualTo(EntityStatus.DELETED);
-    assertThat(pontoColeta.getDeletedAt()).isNotNull();
-    verify(pontoColetaRepository).findByIdAndEntityStatus(id, EntityStatus.ACTIVE);
-    verify(pontoColetaRepository).save(pontoColeta);
-    verifyNoInteractions(tipoProdutoRepository, pontoColetaMapper);
-    verifyNoMoreInteractions(pontoColetaRepository);
-  }
-
-  @Test
-  void deleteThrowsWhenEntityDoesNotExist() {
-    when(pontoColetaRepository.findByIdAndEntityStatus(id, EntityStatus.ACTIVE))
-        .thenReturn(Optional.empty());
-
-    assertThatThrownBy(() -> pontoColetaService.delete(id))
-        .isInstanceOf(ResourceNotFoundException.class)
-        .hasMessage("Ponto de coleta não encontrado");
-    verify(pontoColetaRepository).findByIdAndEntityStatus(id, EntityStatus.ACTIVE);
-    verify(pontoColetaRepository, never()).save(pontoColeta);
-    verifyNoInteractions(tipoProdutoRepository, pontoColetaMapper);
-    verifyNoMoreInteractions(pontoColetaRepository);
-  }
-
-  @Test
-  void findByIdReturnsMappedActiveEntity() {
-    when(pontoColetaRepository.findByIdAndEntityStatus(id, EntityStatus.ACTIVE))
-        .thenReturn(Optional.of(pontoColeta));
-    when(pontoColetaMapper.toResponse(pontoColeta)).thenReturn(response);
-
-    PontoColetaResponse result = pontoColetaService.findById(id);
-
-    assertThat(result).isEqualTo(response);
-    verify(pontoColetaRepository).findByIdAndEntityStatus(id, EntityStatus.ACTIVE);
-    verify(pontoColetaMapper).toResponse(pontoColeta);
-    verifyNoInteractions(tipoProdutoRepository);
-    verifyNoMoreInteractions(pontoColetaRepository, pontoColetaMapper);
-  }
-
-  @Test
-  void findByIdThrowsWhenEntityDoesNotExist() {
-    when(pontoColetaRepository.findByIdAndEntityStatus(id, EntityStatus.ACTIVE))
-        .thenReturn(Optional.empty());
-
-    assertThatThrownBy(() -> pontoColetaService.findById(id))
-        .isInstanceOf(ResourceNotFoundException.class)
-        .hasMessage("Ponto de coleta não encontrado");
-    verify(pontoColetaRepository).findByIdAndEntityStatus(id, EntityStatus.ACTIVE);
-    verifyNoInteractions(tipoProdutoRepository, pontoColetaMapper);
-    verifyNoMoreInteractions(pontoColetaRepository);
-  }
-
-  @Test
-  void findAllReturnsOnlyActiveEntitiesAndMapsResponses() {
-    Set<PontoColeta> pontosColeta = Set.of(pontoColeta);
-    Set<PontoColetaResponse> responses = Set.of(response);
-    when(pontoColetaRepository.findAllByEntityStatus(EntityStatus.ACTIVE)).thenReturn(pontosColeta);
-    when(pontoColetaMapper.toResponseSet(pontosColeta)).thenReturn(responses);
-
-    Set<PontoColetaResponse> result = pontoColetaService.findAll();
-
-    assertThat(result).isEqualTo(responses);
-    verify(pontoColetaRepository).findAllByEntityStatus(EntityStatus.ACTIVE);
-    verify(pontoColetaMapper).toResponseSet(pontosColeta);
-    verifyNoInteractions(tipoProdutoRepository);
-    verifyNoMoreInteractions(pontoColetaRepository, pontoColetaMapper);
-  }
-
-  @Test
-  void findAllWithEmptyResultDelegatesToMapper() {
-    Set<PontoColeta> pontosColeta = Set.of();
-    Set<PontoColetaResponse> responses = Set.of();
-    when(pontoColetaRepository.findAllByEntityStatus(EntityStatus.ACTIVE)).thenReturn(pontosColeta);
-    when(pontoColetaMapper.toResponseSet(pontosColeta)).thenReturn(responses);
-
-    Set<PontoColetaResponse> result = pontoColetaService.findAll();
-
-    assertThat(result).isEmpty();
-    verify(pontoColetaRepository).findAllByEntityStatus(EntityStatus.ACTIVE);
-    verify(pontoColetaMapper).toResponseSet(pontosColeta);
-    verifyNoInteractions(tipoProdutoRepository);
-    verifyNoMoreInteractions(pontoColetaRepository, pontoColetaMapper);
+      assertThatThrownBy(() -> pontoColetaService.delete(id))
+          .isInstanceOf(ResourceNotFoundException.class)
+          .hasMessage("Ponto de coleta não encontrado");
+      verify(pontoColetaRepository).findByIdAndEntityStatus(id, EntityStatus.ACTIVE);
+      verify(pontoColetaRepository, never()).save(pontoColeta);
+      verifyNoInteractions(tipoProdutoRepository, pontoColetaMapper);
+      verifyNoMoreInteractions(pontoColetaRepository);
+    }
   }
 }

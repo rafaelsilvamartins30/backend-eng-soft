@@ -19,11 +19,19 @@ import com.backend.api.descarteeletronico.service.UsuarioService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.ClassOrderer;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestClassOrder;
+import org.junit.jupiter.api.TestMethodOrder;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
+@TestClassOrder(ClassOrderer.OrderAnnotation.class)
 class UsuarioControllerTest {
 
   private MockMvc mockMvc;
@@ -49,105 +57,125 @@ class UsuarioControllerTest {
             id, request.nome(), request.email(), 0L, null, null, EntityStatus.ACTIVE, null);
   }
 
-  @Test
-  void findMeReturnsOkResponse() throws Exception {
-    when(usuarioService.findMe()).thenReturn(response);
+  @Nested
+  @Order(2)
+  @DisplayName("Cenários de Consulta")
+  @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+  class Consulta {
 
-    mockMvc
-        .perform(get("/api/v1/usuarios/me"))
-        .andExpect(status().isOk())
-        .andExpect(jsonPath("$.id").value(id.toString()))
-        .andExpect(jsonPath("$.nome").value(request.nome()))
-        .andExpect(jsonPath("$.email").value(request.email()))
-        .andExpect(jsonPath("$.senha").doesNotExist());
+    @Test
+    @Order(1)
+    void findMeReturnsOkResponse() throws Exception {
+      when(usuarioService.findMe()).thenReturn(response);
 
-    verify(usuarioService).findMe();
-    verifyNoMoreInteractions(usuarioService);
+      mockMvc
+          .perform(get("/api/v1/usuarios/me"))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$.id").value(id.toString()))
+          .andExpect(jsonPath("$.nome").value(request.nome()))
+          .andExpect(jsonPath("$.email").value(request.email()))
+          .andExpect(jsonPath("$.senha").doesNotExist());
+
+      verify(usuarioService).findMe();
+      verifyNoMoreInteractions(usuarioService);
+    }
+
+    @Test
+    @Order(2)
+    void findMeReturnsNotFoundWhenAdminUserDoesNotExist() throws Exception {
+      when(usuarioService.findMe())
+          .thenThrow(new ResourceNotFoundException("Usuário administrador não encontrado"));
+
+      mockMvc
+          .perform(get("/api/v1/usuarios/me"))
+          .andExpect(status().isNotFound())
+          .andExpect(jsonPath("$.message").value("Usuário administrador não encontrado"))
+          .andExpect(jsonPath("$.path").value("/api/v1/usuarios/me"));
+
+      verify(usuarioService).findMe();
+      verifyNoMoreInteractions(usuarioService);
+    }
   }
 
-  @Test
-  void findMeReturnsNotFoundWhenAdminUserDoesNotExist() throws Exception {
-    when(usuarioService.findMe())
-        .thenThrow(new ResourceNotFoundException("Usuário administrador não encontrado"));
+  @Nested
+  @Order(3)
+  @DisplayName("Cenários de Atualização")
+  @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+  class Atualizacao {
 
-    mockMvc
-        .perform(get("/api/v1/usuarios/me"))
-        .andExpect(status().isNotFound())
-        .andExpect(jsonPath("$.message").value("Usuário administrador não encontrado"))
-        .andExpect(jsonPath("$.path").value("/api/v1/usuarios/me"));
+    @Test
+    @Order(1)
+    void updateMeReturnsOkResponse() throws Exception {
+      when(usuarioService.updateMe(request)).thenReturn(response);
 
-    verify(usuarioService).findMe();
-    verifyNoMoreInteractions(usuarioService);
-  }
+      mockMvc
+          .perform(
+              patch("/api/v1/usuarios/me")
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content(objectMapper.writeValueAsString(request)))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$.id").value(id.toString()))
+          .andExpect(jsonPath("$.nome").value(request.nome()))
+          .andExpect(jsonPath("$.email").value(request.email()))
+          .andExpect(jsonPath("$.senha").doesNotExist());
 
-  @Test
-  void updateMeReturnsOkResponse() throws Exception {
-    when(usuarioService.updateMe(request)).thenReturn(response);
+      verify(usuarioService).updateMe(request);
+      verifyNoMoreInteractions(usuarioService);
+    }
 
-    mockMvc
-        .perform(
-            patch("/api/v1/usuarios/me")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request)))
-        .andExpect(status().isOk())
-        .andExpect(jsonPath("$.id").value(id.toString()))
-        .andExpect(jsonPath("$.nome").value(request.nome()))
-        .andExpect(jsonPath("$.email").value(request.email()))
-        .andExpect(jsonPath("$.senha").doesNotExist());
+    @Test
+    @Order(2)
+    void updateMeReturnsBadRequestWhenPayloadIsInvalid() throws Exception {
+      UsuarioUpdateRequest invalidRequest =
+          new UsuarioUpdateRequest("A".repeat(101), "email-invalido", "curta");
 
-    verify(usuarioService).updateMe(request);
-    verifyNoMoreInteractions(usuarioService);
-  }
+      mockMvc
+          .perform(
+              patch("/api/v1/usuarios/me")
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content(objectMapper.writeValueAsString(invalidRequest)))
+          .andExpect(status().isBadRequest())
+          .andExpect(jsonPath("$.message").value("Dados de entrada inválidos"))
+          .andExpect(jsonPath("$.details").isArray());
 
-  @Test
-  void updateMeReturnsBadRequestWhenPayloadIsInvalid() throws Exception {
-    UsuarioUpdateRequest invalidRequest =
-        new UsuarioUpdateRequest("A".repeat(101), "email-invalido", "curta");
+      verifyNoInteractions(usuarioService);
+    }
 
-    mockMvc
-        .perform(
-            patch("/api/v1/usuarios/me")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(invalidRequest)))
-        .andExpect(status().isBadRequest())
-        .andExpect(jsonPath("$.message").value("Dados de entrada inválidos"))
-        .andExpect(jsonPath("$.details").isArray());
+    @Test
+    @Order(3)
+    void updateMeReturnsBadRequestWhenServiceThrowsBusinessException() throws Exception {
+      when(usuarioService.updateMe(request))
+          .thenThrow(new BusinessException("Informe ao menos um campo para atualização."));
 
-    verifyNoInteractions(usuarioService);
-  }
+      mockMvc
+          .perform(
+              patch("/api/v1/usuarios/me")
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content(objectMapper.writeValueAsString(request)))
+          .andExpect(status().isBadRequest())
+          .andExpect(jsonPath("$.message").value("Informe ao menos um campo para atualização."))
+          .andExpect(jsonPath("$.path").value("/api/v1/usuarios/me"));
 
-  @Test
-  void updateMeReturnsBadRequestWhenServiceThrowsBusinessException() throws Exception {
-    when(usuarioService.updateMe(request))
-        .thenThrow(new BusinessException("Informe ao menos um campo para atualização."));
+      verify(usuarioService).updateMe(request);
+      verifyNoMoreInteractions(usuarioService);
+    }
 
-    mockMvc
-        .perform(
-            patch("/api/v1/usuarios/me")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request)))
-        .andExpect(status().isBadRequest())
-        .andExpect(jsonPath("$.message").value("Informe ao menos um campo para atualização."))
-        .andExpect(jsonPath("$.path").value("/api/v1/usuarios/me"));
+    @Test
+    @Order(4)
+    void updateMeReturnsNotFoundWhenAdminUserDoesNotExist() throws Exception {
+      when(usuarioService.updateMe(request))
+          .thenThrow(new ResourceNotFoundException("Usuário administrador não encontrado"));
 
-    verify(usuarioService).updateMe(request);
-    verifyNoMoreInteractions(usuarioService);
-  }
+      mockMvc
+          .perform(
+              patch("/api/v1/usuarios/me")
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content(objectMapper.writeValueAsString(request)))
+          .andExpect(status().isNotFound())
+          .andExpect(jsonPath("$.message").value("Usuário administrador não encontrado"));
 
-  @Test
-  void updateMeReturnsNotFoundWhenAdminUserDoesNotExist() throws Exception {
-    when(usuarioService.updateMe(request))
-        .thenThrow(new ResourceNotFoundException("Usuário administrador não encontrado"));
-
-    mockMvc
-        .perform(
-            patch("/api/v1/usuarios/me")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request)))
-        .andExpect(status().isNotFound())
-        .andExpect(jsonPath("$.message").value("Usuário administrador não encontrado"));
-
-    verify(usuarioService).updateMe(request);
-    verifyNoMoreInteractions(usuarioService);
+      verify(usuarioService).updateMe(request);
+      verifyNoMoreInteractions(usuarioService);
+    }
   }
 }

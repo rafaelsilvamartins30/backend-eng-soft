@@ -19,10 +19,18 @@ import com.backend.api.descarteeletronico.service.NotificacaoService;
 import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.ClassOrderer;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestClassOrder;
+import org.junit.jupiter.api.TestMethodOrder;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
+@TestClassOrder(ClassOrderer.OrderAnnotation.class)
 class NotificacaoControllerTest {
 
   private MockMvc mockMvc;
@@ -54,92 +62,119 @@ class NotificacaoControllerTest {
                     null);
   }
 
-  @Test
-  void findAllReturnsOkResponse() throws Exception {
-    when(notificacaoService.findAll()).thenReturn(Set.of(response));
+  @Nested
+  @Order(2)
+  @DisplayName("Cenários de Consulta")
+  @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+  class ConsultaTests {
 
-    mockMvc
-            .perform(get("/api/v1/notificacoes"))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$[0].id").value(id.toString()));
+    @Test
+    @Order(1)
+    void findAllReturnsOkResponse() throws Exception {
+      when(notificacaoService.findAll()).thenReturn(Set.of(response));
 
-    verify(notificacaoService).findAll();
-    verifyNoMoreInteractions(notificacaoService);
+      mockMvc
+              .perform(get("/api/v1/notificacoes"))
+              .andExpect(status().isOk())
+              .andExpect(jsonPath("$[0].id").value(id.toString()));
+
+      verify(notificacaoService).findAll();
+      verifyNoMoreInteractions(notificacaoService);
+    }
+
+    @Test
+    @Order(2)
+    void findUnreadReturnsOkResponse() throws Exception {
+      when(notificacaoService.findUnread()).thenReturn(Set.of(response));
+
+      mockMvc
+              .perform(get("/api/v1/notificacoes/nao-visualizadas"))
+              .andExpect(status().isOk())
+              .andExpect(jsonPath("$[0].entityStatus").value(EntityStatus.ACTIVE.name()));
+
+      verify(notificacaoService).findUnread();
+      verifyNoMoreInteractions(notificacaoService);
+    }
   }
 
-  @Test
-  void findUnreadReturnsOkResponse() throws Exception {
-    when(notificacaoService.findUnread()).thenReturn(Set.of(response));
+  @Nested
+  @Order(3)
+  @DisplayName("Cenários de Atualização")
+  @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+  class AtualizacaoTests {
 
-    mockMvc
-            .perform(get("/api/v1/notificacoes/nao-visualizadas"))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$[0].entityStatus").value(EntityStatus.ACTIVE.name()));
+    @Test
+    @Order(1)
+    void markAsViewedReturnsOkResponse() throws Exception {
+      NotificacaoResponse viewedResponse =
+              new NotificacaoResponse(
+                      response.id(),
+                      response.titulo(),
+                      response.mensagem(),
+                      response.pontoColetaId(),
+                      response.pontoColetaNome(),
+                      response.relatoProblemaId(),
+                      response.version(),
+                      response.createdAt(),
+                      response.updatedAt(),
+                      EntityStatus.INACTIVE,
+                      response.deletedAt());
+      when(notificacaoService.markAsViewed(id)).thenReturn(viewedResponse);
 
-    verify(notificacaoService).findUnread();
-    verifyNoMoreInteractions(notificacaoService);
+      mockMvc
+              .perform(patch("/api/v1/notificacoes/{id}/visualizar", id))
+              .andExpect(status().isOk())
+              .andExpect(jsonPath("$.entityStatus").value(EntityStatus.INACTIVE.name()));
+
+      verify(notificacaoService).markAsViewed(id);
+      verifyNoMoreInteractions(notificacaoService);
+    }
+
+    @Test
+    @Order(2)
+    void markAsViewedReturnsNotFoundWhenServiceThrows() throws Exception {
+      when(notificacaoService.markAsViewed(id))
+              .thenThrow(new ResourceNotFoundException("Notificação não encontrada"));
+
+      mockMvc
+              .perform(patch("/api/v1/notificacoes/{id}/visualizar", id))
+              .andExpect(status().isNotFound())
+              .andExpect(jsonPath("$.message").value("Notificação não encontrada"));
+
+      verify(notificacaoService).markAsViewed(id);
+      verifyNoMoreInteractions(notificacaoService);
+    }
   }
 
-  @Test
-  void markAsViewedReturnsOkResponse() throws Exception {
-    NotificacaoResponse viewedResponse =
-            new NotificacaoResponse(
-                    response.id(),
-                    response.titulo(),
-                    response.mensagem(),
-                    response.pontoColetaId(),
-                    response.pontoColetaNome(),
-                    response.relatoProblemaId(),
-                    response.version(),
-                    response.createdAt(),
-                    response.updatedAt(),
-                    EntityStatus.INACTIVE,
-                    response.deletedAt());
-    when(notificacaoService.markAsViewed(id)).thenReturn(viewedResponse);
+  @Nested
+  @Order(4)
+  @DisplayName("Cenários de Exclusão")
+  @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+  class ExclusaoTests {
 
-    mockMvc
-            .perform(patch("/api/v1/notificacoes/{id}/visualizar", id))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$.entityStatus").value(EntityStatus.INACTIVE.name()));
+    @Test
+    @Order(1)
+    void deleteReturnsNoContent() throws Exception {
+      mockMvc.perform(delete("/api/v1/notificacoes/{id}", id)).andExpect(status().isNoContent());
 
-    verify(notificacaoService).markAsViewed(id);
-    verifyNoMoreInteractions(notificacaoService);
-  }
+      verify(notificacaoService).delete(id);
+      verifyNoMoreInteractions(notificacaoService);
+    }
 
-  @Test
-  void markAsViewedReturnsNotFoundWhenServiceThrows() throws Exception {
-    when(notificacaoService.markAsViewed(id))
-            .thenThrow(new ResourceNotFoundException("Notificação não encontrada"));
+    @Test
+    @Order(2)
+    void deleteReturnsNotFoundWhenServiceThrows() throws Exception {
+      doThrow(new ResourceNotFoundException("Notificação não encontrada"))
+              .when(notificacaoService)
+              .delete(id);
 
-    mockMvc
-            .perform(patch("/api/v1/notificacoes/{id}/visualizar", id))
-            .andExpect(status().isNotFound())
-            .andExpect(jsonPath("$.message").value("Notificação não encontrada"));
+      mockMvc
+              .perform(delete("/api/v1/notificacoes/{id}", id))
+              .andExpect(status().isNotFound())
+              .andExpect(jsonPath("$.message").value("Notificação não encontrada"));
 
-    verify(notificacaoService).markAsViewed(id);
-    verifyNoMoreInteractions(notificacaoService);
-  }
-
-  @Test
-  void deleteReturnsNoContent() throws Exception {
-    mockMvc.perform(delete("/api/v1/notificacoes/{id}", id)).andExpect(status().isNoContent());
-
-    verify(notificacaoService).delete(id);
-    verifyNoMoreInteractions(notificacaoService);
-  }
-
-  @Test
-  void deleteReturnsNotFoundWhenServiceThrows() throws Exception {
-    doThrow(new ResourceNotFoundException("Notificação não encontrada"))
-            .when(notificacaoService)
-            .delete(id);
-
-    mockMvc
-            .perform(delete("/api/v1/notificacoes/{id}", id))
-            .andExpect(status().isNotFound())
-            .andExpect(jsonPath("$.message").value("Notificação não encontrada"));
-
-    verify(notificacaoService).delete(id);
-    verifyNoMoreInteractions(notificacaoService);
+      verify(notificacaoService).delete(id);
+      verifyNoMoreInteractions(notificacaoService);
+    }
   }
 }

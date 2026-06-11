@@ -1,25 +1,41 @@
 name: CI
 
+# Define os eventos que disparam o workflow
 on:
-  pull_request:
+  # Dispara ao fazer push nas branches main ou develop
   push:
     branches:
-      - develop
       - main
-      - master
+      - develop
+  # Dispara ao abrir ou atualizar um Pull Request para as branches main ou develop
+  pull_request:
+    branches:
+      - main
+      - develop
+  # Permite a execução manual do workflow através da aba "Actions" no GitHub
+  workflow_dispatch:
+
+# Gerenciamento de concorrência para evitar múltiplas execuções simultâneas no mesmo contexto (branch/PR)
+# Se uma nova execução começar, a anterior que ainda estiver em progresso será cancelada
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   test:
     name: Maven Test
     runs-on: ubuntu-latest
+    # Define o diretório de trabalho padrão para todos os passos deste job
     defaults:
       run:
         working-directory: Descarte-Eletronico
 
     steps:
+      # Faz o checkout do código do repositório para a máquina que executa o job
       - name: Checkout
         uses: actions/checkout@v4
 
+      # Configura o ambiente Java 21 (Temurin) e habilita o cache do Maven para acelerar os builds
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
@@ -27,8 +43,10 @@ jobs:
           java-version: '21'
           cache: maven
 
+      # Verifica se o Docker está instalado e funcionando (necessário para o Testcontainers)
       - name: Verify Docker
         run: docker info
 
+      # Executa todos os testes do projeto usando o Maven Wrapper
       - name: Run tests
         run: ./mvnw test
