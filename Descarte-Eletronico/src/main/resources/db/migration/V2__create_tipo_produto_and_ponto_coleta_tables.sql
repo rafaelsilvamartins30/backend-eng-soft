@@ -29,8 +29,8 @@ CREATE TABLE IF NOT EXISTS ponto_coleta (
     descricao VARCHAR(500) NOT NULL,
     latitude NUMERIC(10, 7) NOT NULL,
     longitude NUMERIC(10, 7) NOT NULL,
-    horario_abertura TIME NOT NULL,  -- Nova coluna
-    horario_fechamento TIME NOT NULL, -- Nova coluna
+    horario_abertura TIME NOT NULL,
+    horario_fechamento TIME NOT NULL,
     CONSTRAINT ck_ponto_coleta_entity_status
     CHECK (entity_status IN ('ACTIVE', 'INACTIVE', 'DELETED')),
     CONSTRAINT ck_ponto_coleta_latitude
